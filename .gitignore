@@ -1,3 +1,6 @@
+# ln -s
+llvm-ascend
+
 # python
 __pycache__/
 
