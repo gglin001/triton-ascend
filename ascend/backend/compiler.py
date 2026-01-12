@@ -23,6 +23,7 @@ import functools
 import hashlib
 import os
 import re
+import sys
 import subprocess
 import tempfile
 from dataclasses import dataclass
@@ -65,6 +66,13 @@ try:
     is_compile_on_910_95 = acl.get_soc_name().startswith("Ascend910_95")
 except Exception as e:
     is_compile_on_910_95 = False
+
+# is_compile_on_910_95 = True
+tempfile.TemporaryDirectory = functools.partial(
+    tempfile.TemporaryDirectory,
+    dir="_demos/dump",
+    delete=False,
+)
 
 # TODO: materialize the concrete min shape
 def min_dot_size(target: GPUTarget):
@@ -335,6 +343,7 @@ def _parse_ttir_metadata(ttir: str, metadata: dict):
 
 def get_common_bishengir_compile_options(metadata):
     bishengir_target = metadata['target'].arch
+    bishengir_target = os.environ.get("TRITON_MOCK_PTX_VERSION")
     bishengir_target_opt = f"--target={bishengir_target}"
     return [bishengir_target_opt]
 
@@ -419,13 +428,25 @@ def linalg_to_bin_enable_npu_compile_910_95(linalg: str, metadata, opt):
                 "--enable-hfusion-compile=true",
                 "--enable-triton-kernel-compile=true",
             ]
+        _compile_option_list += [
+            "--bishengir-print-ir-after-all",
+            "--mlir-disable-threading",
+            # "--debug",
+        ]
         cmd_list = (
             [npu_compiler_path, ttadapter_path]
             + _compile_option_list
             + ["-o", bin_file]
         )
 
-        ret = subprocess.run(cmd_list, capture_output=True, check=True)
+        print(f"cmd_list: \n {" ".join(cmd_list)} \n")
+        ret = subprocess.run(
+            cmd_list,
+            capture_output=True,
+            check=True,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+        )
         match = re.search(r'UB\s+size\s*=\s*(\d+)\s*bits', ret.stdout.decode('utf-8'))
         if match:
             # get the ub bits of triton kernel from bisheng for inductor autotune using
@@ -456,7 +477,8 @@ def linalg_to_bin_enable_npu_compile_A2_A3(linalg: str, metadata, opt):
         bin_path = os.path.join(tmpdir, bin_file_with_ext)
         callback_path = os.path.join(tmpdir, "libkernel.so")
         _compile_option_list = [
-            f"--target={NPUUtils().get_arch()}",
+            # f"--target={NPUUtils().get_arch()}",
+            f"--target={os.environ.get("TRITON_MOCK_PTX_VERSION")}",
         ]
         multibuffer = metadata["multibuffer"]
         if multibuffer is not None:
@@ -540,12 +562,24 @@ def linalg_to_bin_enable_npu_compile_A2_A3(linalg: str, metadata, opt):
                 bishengir_hivm_opt,
                 "--enable-triton-kernel-compile=true",
             ]
+        _compile_option_list += [
+            "--bishengir-print-ir-after-all",
+            "--mlir-disable-threading",
+            # "--debug",
+        ]
         cmd_list = (
             [npu_compiler_path, ttadapter_path]
             + _compile_option_list
             + ["-o", bin_file]
         )
-        ret = subprocess.run(cmd_list, capture_output=True, check=True)
+        print(f"cmd_list: \n {" ".join(cmd_list)} \n")
+        ret = subprocess.run(
+            cmd_list,
+            capture_output=False,
+            check=True,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+        )
         match = re.search(r'UB\s+size\s*=\s*(\d+)\s*bits', ret.stdout.decode('utf-8'))
         if match:
             # get the ub bits of triton kernel from bisheng for inductor autotune using
