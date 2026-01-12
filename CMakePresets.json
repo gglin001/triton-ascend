@@ -1,0 +1,36 @@
+{
+  "version": 10,
+  "configurePresets": [
+    {
+      "name": "osx",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/install",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_SYSROOT": "/",
+        "CMAKE_LINKER_TYPE": "MOLD",
+        "CMAKE_INSTALL_RPATH_USE_LINK_PATH": true,
+        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/bin",
+        "LLVM_DIR": "${sourceDir}/llvm-ascend/llvm-project/build/lib/cmake/llvm",
+        "MLIR_DIR": "${sourceDir}/llvm-ascend/llvm-project/build/lib/cmake/mlir",
+        "TRITON_PLUGIN_DIRS": "${sourceDir}/ascend",
+        "TRITON_BUILD_PYTHON_MODULE": true,
+        "LLVM_ENABLE_ASSERTIONS": true
+      }
+    },
+    {
+      "name": "osx_lld",
+      "inherits": "osx",
+      "cacheVariables": {
+        "CMAKE_SYSROOT": "",
+        "CMAKE_LINKER_TYPE": "LLD",
+        "LLVM_DIR": "${sourceDir}/llvm-ascend/llvm-project/build/lib/cmake/llvm",
+        "MLIR_DIR": "${sourceDir}/llvm-ascend/llvm-project/build/lib/cmake/mlir"
+      }
+    }
+  ]
+}

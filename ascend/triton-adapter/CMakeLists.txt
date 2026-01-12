@@ -1,5 +1,5 @@
 # Security compilation options settings
-include(${CMAKE_CURRENT_SOURCE_DIR}/safe_compile.cmake)
+# include(${CMAKE_CURRENT_SOURCE_DIR}/safe_compile.cmake)
 
 option(TRITON_ADAPTER_BUILD_CPU_BACKEND "Build triton-adapter CPU backend" ON)
 

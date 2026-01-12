@@ -759,7 +759,7 @@ setup(
     packages=get_packages(_backends),
     package_data=get_package_data(_backends),
     include_package_data=True,
-    ext_modules=[CMakeExtension("triton", "triton/_C/")],
+    # ext_modules=[CMakeExtension("triton", "triton/_C/")],
     cmdclass={
         "build_ext": BuildExt,
         "install": BuildInstall,
