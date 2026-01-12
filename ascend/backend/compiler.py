@@ -442,7 +442,7 @@ def linalg_to_bin_enable_npu_compile_910_95(linalg: str, metadata, opt):
         print(f"cmd_list: \n {" ".join(cmd_list)} \n")
         ret = subprocess.run(
             cmd_list,
-            capture_output=True,
+            capture_output=False,
             check=True,
             stdout=sys.stdout,
             stderr=sys.stderr,
