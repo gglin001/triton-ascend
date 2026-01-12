@@ -209,7 +209,12 @@ if(TRITON_BUILD_PYTHON_MODULE)
     include_directories(${Python3_INCLUDE_DIRS})
     include_directories(${pybind11_INCLUDE_DIR})
     link_directories(${Python3_LIBRARY_DIRS})
-    link_libraries(${Python3_LIBRARIES})
+    if(APPLE)
+      # Avoid linking libpython directly to prevent loading a second runtime.
+      add_link_options(-undefined dynamic_lookup)
+    else()
+      link_libraries(${Python3_LIBRARIES})
+    endif()
     add_link_options(${Python3_LINK_OPTIONS})
   endif()
 
