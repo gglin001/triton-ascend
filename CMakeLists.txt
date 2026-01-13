@@ -144,7 +144,7 @@ function(remove_component_from_property property_name component_to_remove)
 endfunction()
 
 # Disable warnings that show up in external code (gtest;pybind11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-covered-switch-default -fvisibility=hidden")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-covered-switch-default -fvisibility=hidden -Wno-deprecated-declarations")
 
 include_directories(${TRITON_ROOT_DIR})
 include_directories(${MLIR_INCLUDE_DIRS})
