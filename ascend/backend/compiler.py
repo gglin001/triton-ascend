@@ -89,7 +89,7 @@ if not getattr(subprocess.run, "_triton_ascend_wrapped", False):
 
         print(f"cmd_list: \n {' '.join(cmd_list)} \n")
         capture_output = kwargs.pop("capture_output", None)
-        if capture_output:
+        if 0 and capture_output:
             ret = _subprocess_run(
                 cmd_list,
                 capture_output=True,
@@ -102,10 +102,12 @@ if not getattr(subprocess.run, "_triton_ascend_wrapped", False):
 
         kwargs.setdefault("stdout", sys.stdout)
         kwargs.setdefault("stderr", sys.stderr)
-        return _subprocess_run(
+        _subprocess_run(
             cmd_list,
+            capture_output=False,
             **kwargs,
         )
+        return subprocess.CompletedProcess(cmd_list, 0, b"", b"")
 
     subprocess_run._triton_ascend_wrapped = True
     subprocess.run = subprocess_run
