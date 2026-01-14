@@ -66,8 +66,9 @@ try:
 except Exception as e:
     is_compile_on_910_95 = False
 
-is_compile_on_910_95 = True
-import sys
+# `Ascend910_9599` needs latest compiler
+is_compile_on_910_95 = False
+
 if not getattr(tempfile, "_triton_ascend_tmp_wrapped", False):
     tempfile.TemporaryDirectory = functools.partial(
         tempfile.TemporaryDirectory,
@@ -78,14 +79,34 @@ if not getattr(tempfile, "_triton_ascend_tmp_wrapped", False):
 _subprocess_run = subprocess.run
 if not getattr(subprocess.run, "_triton_ascend_wrapped", False):
     def subprocess_run(cmd_list, **kwargs):
-        _ = kwargs.pop("capture_output", None)
-        print(f"cmd_list: \n {" ".join(cmd_list)} \n")
+        if cmd_list[0].endswith("bishengir-compile"):
+            cmd_list += [
+                # "--bishengir-print-ir-after-all",
+                # "--mlir-disable-threading",
+                # "--debug",
+                # "--enable-cpu-runner=true",
+            ]
+
+        print(f"cmd_list: \n {' '.join(cmd_list)} \n")
+        capture_output = kwargs.pop("capture_output", None)
+        if capture_output:
+            ret = _subprocess_run(
+                cmd_list,
+                capture_output=True,
+                **kwargs,
+            )
+            print(ret)
+            return ret
+
+        import sys
+
         kwargs.setdefault("stdout", sys.stdout)
         kwargs.setdefault("stderr", sys.stderr)
         return _subprocess_run(
             cmd_list,
             **kwargs,
         )
+
     subprocess_run._triton_ascend_wrapped = True
     subprocess.run = subprocess_run
 
@@ -443,12 +464,6 @@ def linalg_to_bin_enable_npu_compile_910_95(linalg: str, metadata, opt):
                 "--enable-hfusion-compile=true",
                 "--enable-triton-kernel-compile=true",
             ]
-        _compile_option_list += [
-            "--bishengir-print-ir-after-all",
-            "--mlir-disable-threading",
-            # "--debug",
-            # "--enable-cpu-runner=true",
-        ]
         cmd_list = (
             [npu_compiler_path, ttadapter_path]
             + _compile_option_list
@@ -571,11 +586,6 @@ def linalg_to_bin_enable_npu_compile_A2_A3(linalg: str, metadata, opt):
                 bishengir_hivm_opt,
                 "--enable-triton-kernel-compile=true",
             ]
-        _compile_option_list += [
-            "--bishengir-print-ir-after-all",
-            "--mlir-disable-threading",
-            # "--debug",
-        ]
         cmd_list = (
             [npu_compiler_path, ttadapter_path]
             + _compile_option_list

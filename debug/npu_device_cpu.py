@@ -27,8 +27,9 @@ class FakeAscendDriver(GPUDriver):
     def get_current_target(self):
         warp_size = 0
         # ascend/backend/utils.py
-        # arch = "Ascend910B4"
-        arch = "Ascend910_9599"
+        arch = "Ascend910B4"
+        # arch = "Ascend910_9392"
+        # arch = "Ascend910_9599"
         # return GPUTarget("cpu", arch, warp_size)
         return GPUTarget("npu", arch, warp_size)
 
