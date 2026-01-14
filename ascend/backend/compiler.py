@@ -656,6 +656,8 @@ class NPUOptions:
     # compile_mode: "simd" (default), "unstructured_in_simt", "simt_only"
     # When compile_mode is provided, it automatically sets other fields
     compile_mode: str = "simd"
+    # debug
+    # compile_mode: str = "simt_only"
 
     def __post_init__(self):
         # Parse compile_mode and set related fields
