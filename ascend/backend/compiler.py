@@ -72,7 +72,7 @@ is_compile_on_910_95 = False
 if not getattr(tempfile, "_triton_ascend_tmp_wrapped", False):
     tempfile.TemporaryDirectory = functools.partial(
         tempfile.TemporaryDirectory,
-        dir="_demos",
+        dir=os.environ.get("TRITON_ASCEND_DUMP_DIR", "_demos"),
         delete=False,
     )
     tempfile._triton_ascend_tmp_wrapped = True
@@ -95,7 +95,7 @@ if not getattr(subprocess.run, "_triton_ascend_wrapped", False):
                 capture_output=True,
                 **kwargs,
             )
-            print(ret)
+            print(f"ret: \n{ret}\n")
             return ret
 
         import sys
