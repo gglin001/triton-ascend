@@ -696,6 +696,14 @@ class CPUOptions:
     max_num_imprecise_acc_default: bool = None
     extern_libs: dict = None
 
+    # debug
+    allowed_dot_input_precisions: Tuple[str] = ("ieee", "hf32")
+    force_simt_only: bool = False
+    enable_nd2nz_on_vector: bool = False
+    enable_select_analysis: bool = False
+    compile_on_910_95: bool = False
+    force_simt_template: bool = False
+
     def hash(self):
         key = "_".join([f"{name}-{val}" for name, val in self.__dict__.items()])
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
