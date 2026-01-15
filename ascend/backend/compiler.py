@@ -69,10 +69,11 @@ except Exception as e:
 # `Ascend910_9599` needs latest compiler
 is_compile_on_910_95 = False
 
+TRITON_ASCEND_DUMP_DIR = os.environ.get("TRITON_ASCEND_DUMP_DIR", "_demos")
 if not getattr(tempfile, "_triton_ascend_tmp_wrapped", False):
     tempfile.TemporaryDirectory = functools.partial(
         tempfile.TemporaryDirectory,
-        dir=os.environ.get("TRITON_ASCEND_DUMP_DIR", "_demos"),
+        dir=TRITON_ASCEND_DUMP_DIR,
         delete=False,
     )
     tempfile._triton_ascend_tmp_wrapped = True
@@ -85,6 +86,14 @@ if not getattr(subprocess.run, "_triton_ascend_wrapped", False):
                 # "--mlir-disable-threading",
                 # "--debug",
                 # "--enable-cpu-runner=true",
+            ]
+        elif cmd_list[0].endswith("triton-adapter-opt"):
+            cmd_list += [
+                "--mlir-print-ir-after-all",
+                "--mlir-print-ir-module-scope",
+                f"--mlir-print-ir-tree-dir={TRITON_ASCEND_DUMP_DIR}/_adapter_ir",
+                "--mlir-disable-threading",
+                # "--debug",
             ]
 
         print(f"cmd_list: \n {' '.join(cmd_list)} \n")
