@@ -89,6 +89,7 @@ if not getattr(subprocess.run, "_triton_ascend_wrapped", False):
             ]
         elif cmd_list[0].endswith("triton-adapter-opt"):
             cmd_list += [
+                # "--mlir-print-ir-before-all",
                 "--mlir-print-ir-after-all",
                 "--mlir-print-ir-module-scope",
                 f"--mlir-print-ir-tree-dir={TRITON_ASCEND_DUMP_DIR}/_adapter_ir",
