@@ -26,7 +26,6 @@
 #include "TritonToLinalg/TritonToLinalgPass.h"
 #include "Utils/InterleaveOptimization.h"
 #include "Utils/Utils.h"
-#include "bishengir/Dialect/Annotation/IR/Annotation.h"
 
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -71,6 +70,13 @@ using namespace triton;
 
 const std::string MayImplicitTransposeWithLastAxisTAG = "MayImplicitTransposeWithLastAxis";
 
+static void setMayImplicitTransposeAttr(Operation *op, MLIRContext *context) {
+  if (!op) {
+    return;
+  }
+  op->setAttr(MayImplicitTransposeWithLastAxisTAG, UnitAttr::get(context));
+}
+
 LogicalResult
 AddPtrConverter::matchAndRewrite(triton::AddPtrOp op, OpAdaptor adaptor,
                                  ConversionPatternRewriter &rewriter) const {
@@ -86,8 +92,8 @@ LogicalResult LoadConverter::toTensorAndReplace(
   Value loadedTensor = rewriter.create<bufferization::ToTensorOp>(
       loc, tensorType, localMem, true, true);
   if(mayImplicitTransposeWithLastAxis){
-    auto markOp = rewriter.create<annotation::MarkOp>(loc, loadedTensor);
-    markOp->setAttr(MayImplicitTransposeWithLastAxisTAG, UnitAttr::get(rewriter.getContext()));
+    setMayImplicitTransposeAttr(loadedTensor.getDefiningOp(),
+                                rewriter.getContext());
   }
   rewriter.replaceOp(op, loadedTensor);
   return success();
@@ -269,8 +275,12 @@ LoadConverter::matchAndRewrite(triton::LoadOp op, OpAdaptor adaptor,
   }
   if (!op->hasAttr(ConverterUtils::GeneratedByMakeTensorPtrTAG)) {
     auto memrefOp = dyn_cast<memref::ReinterpretCastOp>(ptr.getDefiningOp());
-    auto ret = mlir::ConverterUtils::getLastStrideOfReinterpretCastOp(memrefOp);
-    if(ret.has_value())lastStride = *ret;
+    if (memrefOp) {
+      auto ret =
+          mlir::ConverterUtils::getLastStrideOfReinterpretCastOp(memrefOp);
+      if (ret.has_value())
+        lastStride = *ret;
+    }
   }
   bool mayImplicitTransposeWithLastAxis = (existDotFlag) && (!op->hasAttr(ConverterUtils::GeneratedByMakeTensorPtrTAG)) &&
     (lastStride != 1 && mlir::ConverterUtils::isaPermutedMemRefType(memRefType));
@@ -356,8 +366,8 @@ LoadConverter::matchAndRewrite(triton::LoadOp op, OpAdaptor adaptor,
         allocOp, boundarySizes, loc, rewriter);
     rewriter.create<memref::CopyOp>(loc, srcSubView, dstSubview);
     if (mayImplicitTransposeWithLastAxis) {
-      auto markOp = rewriter.create<annotation::MarkOp>(loc, dstSubview);
-      markOp->setAttr(MayImplicitTransposeWithLastAxisTAG, UnitAttr::get(rewriter.getContext()));
+      setMayImplicitTransposeAttr(dstSubview.getOperation(),
+                                  rewriter.getContext());
     }
     return this->toTensorAndReplace(op, tensorType, allocOp, mayImplicitTransposeWithLastAxis, loc, rewriter);
   }
@@ -366,26 +376,28 @@ LoadConverter::matchAndRewrite(triton::LoadOp op, OpAdaptor adaptor,
     assert(!other && "can not input 'other' when 'mask' is not set");
     if (auto unrealizedCastOp =
             ptr.getDefiningOp<UnrealizedConversionCastOp>()) {
-      // TODO : not support handle  associate with "module"
-      // hint : can be handled in Linearize
-      op->emitError("meeting unexpected UCC in LoadConverter!");
-      return failure();
-    } else {
-      // If last dimension stride equals 2, try deinterleave optimization.
-      auto [ptrStrides, ptrOffsets] = getStridesAndOffset(memRefType);
-      if (ptrStrides.back() == 2 && (memRefShape.back() % 2 == 0) &&
-          mlir::triton::DeinterleaveStatusOptimization(op, adaptor, rewriter)
-              .succeeded()) {
-        return success();
+      if (!unrealizedCastOp->hasAttr(ConverterUtils::pointerCastAttrName)) {
+        // TODO : not support handle  associate with "module"
+        // hint : can be handled in Linearize
+        op->emitError("meeting unexpected UCC in LoadConverter!");
+        return failure();
       }
-      rewriter.create<memref::CopyOp>(loc, ptr, allocOp);
-      if (mayImplicitTransposeWithLastAxis && allocOp.getDefiningOp<memref::AllocOp>()) {
-        auto markOp = rewriter.create<annotation::MarkOp>(loc, allocOp);
-        markOp->setAttr(MayImplicitTransposeWithLastAxisTAG, UnitAttr::get(rewriter.getContext()));
-      } else if (mayImplicitTransposeWithLastAxis && allocOp.getDefiningOp<memref::SubViewOp>()) {
-        auto markOp = rewriter.create<annotation::MarkOp>(loc, allocOpTmp);
-        markOp->setAttr(MayImplicitTransposeWithLastAxisTAG, UnitAttr::get(rewriter.getContext()));
-      }
+    }
+
+    // If last dimension stride equals 2, try deinterleave optimization.
+    auto [ptrStrides, ptrOffsets] = getStridesAndOffset(memRefType);
+    if (ptrStrides.back() == 2 && (memRefShape.back() % 2 == 0) &&
+        mlir::triton::DeinterleaveStatusOptimization(op, adaptor, rewriter)
+            .succeeded()) {
+      return success();
+    }
+    rewriter.create<memref::CopyOp>(loc, ptr, allocOp);
+    if (mayImplicitTransposeWithLastAxis && allocOp.getDefiningOp<memref::AllocOp>()) {
+      setMayImplicitTransposeAttr(allocOp.getDefiningOp(),
+                                  rewriter.getContext());
+    } else if (mayImplicitTransposeWithLastAxis && allocOp.getDefiningOp<memref::SubViewOp>()) {
+      setMayImplicitTransposeAttr(allocOpTmp.getDefiningOp(),
+                                  rewriter.getContext());
     }
 
     return this->toTensorAndReplace(op, tensorType, allocOp, mayImplicitTransposeWithLastAxis, loc, rewriter);
@@ -428,31 +440,33 @@ LoadConverter::matchAndRewrite(triton::LoadOp op, OpAdaptor adaptor,
   }
 
   if (auto unrealizedCastOp = ptr.getDefiningOp<UnrealizedConversionCastOp>()) {
-    // TODO : not support handle  associate with "module"
-    // hint : can be handled in Linearize
-    op->emitError("meeting unexpected UCC in LoadConverter!");
-    return failure();
-  } else {
-    memref::SubViewOp srcSubView = mstate.getSubview(ptr, loc, rewriter);
-    memref::SubViewOp dstSubView = mstate.getSubview(allocOp, loc, rewriter);
-    MemRefType dstSubViewType = mlir::cast<MemRefType>(dstSubView.getType());
-
-    auto [srcStrides, srcOffset] = getStridesAndOffset(dstSubViewType);
-    MemRefType castType = MemRefType::get(
-      dstSubViewType.getShape(),
-      dstSubViewType.getElementType(),
-      makeStridedLinearLayoutMap(srcStrides, srcOffset, rewriter.getContext())
-    );
-    auto castOp = rewriter.create<memref::CastOp>(loc, castType, dstSubView);
-    rewriter.create<memref::CopyOp>(loc, srcSubView, castOp);
-    
-    if (mayImplicitTransposeWithLastAxis && allocOp.getDefiningOp<memref::AllocOp>()) {
-      auto markOp = rewriter.create<annotation::MarkOp>(loc, allocOp);
-      markOp->setAttr(MayImplicitTransposeWithLastAxisTAG, UnitAttr::get(rewriter.getContext()));
-    } else if (mayImplicitTransposeWithLastAxis && allocOp.getDefiningOp<memref::SubViewOp>()) {
-      auto markOp = rewriter.create<annotation::MarkOp>(loc, allocOpTmp);
-      markOp->setAttr(MayImplicitTransposeWithLastAxisTAG, UnitAttr::get(rewriter.getContext()));
+    if (!unrealizedCastOp->hasAttr(ConverterUtils::pointerCastAttrName)) {
+      // TODO : not support handle  associate with "module"
+      // hint : can be handled in Linearize
+      op->emitError("meeting unexpected UCC in LoadConverter!");
+      return failure();
     }
+  }
+
+  memref::SubViewOp srcSubView = mstate.getSubview(ptr, loc, rewriter);
+  memref::SubViewOp dstSubView = mstate.getSubview(allocOp, loc, rewriter);
+  MemRefType dstSubViewType = mlir::cast<MemRefType>(dstSubView.getType());
+
+  auto [srcStrides, srcOffset] = getStridesAndOffset(dstSubViewType);
+  MemRefType castType = MemRefType::get(
+    dstSubViewType.getShape(),
+    dstSubViewType.getElementType(),
+    makeStridedLinearLayoutMap(srcStrides, srcOffset, rewriter.getContext())
+  );
+  auto castOp = rewriter.create<memref::CastOp>(loc, castType, dstSubView);
+  rewriter.create<memref::CopyOp>(loc, srcSubView, castOp);
+  
+  if (mayImplicitTransposeWithLastAxis && allocOp.getDefiningOp<memref::AllocOp>()) {
+    setMayImplicitTransposeAttr(allocOp.getDefiningOp(),
+                                rewriter.getContext());
+  } else if (mayImplicitTransposeWithLastAxis && allocOp.getDefiningOp<memref::SubViewOp>()) {
+    setMayImplicitTransposeAttr(allocOpTmp.getDefiningOp(),
+                                rewriter.getContext());
   }
   return this->toTensorAndReplace(op, tensorType, allocOp, mayImplicitTransposeWithLastAxis, loc, rewriter);
 }

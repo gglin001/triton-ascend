@@ -43,6 +43,7 @@ namespace ConverterUtils {
 const std::string GeneratedByMakeTensorPtrTAG = "GeneratedByMakeTensorPtr";
 const std::string discreteMaskAttrName = "DiscreteMask";
 const std::string discreteAttrName = "DiscreteMemAccess";
+const std::string pointerCastAttrName = "triton_adapter.pointer_cast";
 
 bool isaPermutedMemRefType(MemRefType);
 

@@ -5,7 +5,6 @@ add_triton_library(DiscreteMaskAccessConversion
   DiscreteMaskAccessConversionPassIncGen
 
   LINK_LIBS
-  BiShengIRHIVMDialect
   MLIRIR
   MLIRPass
   MLIRTransforms

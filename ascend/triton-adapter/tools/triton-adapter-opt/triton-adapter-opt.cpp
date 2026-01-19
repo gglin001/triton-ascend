@@ -20,16 +20,12 @@
  * THE SOFTWARE.
  */
 
-#include "TritonToAnnotation/Passes.h"
-#include "TritonToHIVM/Passes.h"
-#include "TritonToHFusion/Passes.h"
 #include "DiscreteMaskAccessConversion/Passes.h"
 #include "TritonToLinalg/Passes.h"
 #include "TritonToLLVM/Passes.h"
 #include "TritonToUnstructure/Passes.h"
 #include "TritonLinearize/Passes.h"
 #include "TritonToStructured/Passes.h"
-#include "bishengir/InitAllDialects.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/GPU/IR/GPUDialect.h"
@@ -51,18 +47,13 @@ int main(int argc, char **argv) {
                   mlir::tensor::TensorDialect, mlir::memref::MemRefDialect,
                   mlir::bufferization::BufferizationDialect,
                   mlir::gpu::GPUDialect>();
-  bishengir::registerAllDialects(registry);
-
   // Register all passes.
   mlir::triton::registerTritonLinearizePass();
   mlir::triton::registerTritonToLinalgPass();
   mlir::triton::registerTritonToLLVMPass();
-  mlir::triton::registerTritonToAnnotationPass();
-  mlir::triton::registerTritonToHIVMPass();
   mlir::triton::registerDiscreteMaskAccessConversionPass();
   mlir::triton::registerBubbleUpOperationPass();
   mlir::triton::registerTritonToUnstructurePass();
-  mlir::triton::registerTritonToHFusionPass();
   mlir::triton::registerTritonToStructuredPass();
 
   return mlir::asMainReturnCode(

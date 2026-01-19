@@ -24,7 +24,6 @@
 #include "Utils/Utils.h"
 
 #include "TritonToLinalg/MaskAnalysis.h"
-#include "bishengir/Dialect/HIVM/IR/HIVM.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -41,8 +40,6 @@ namespace triton {
 } // namespace mlir
 
 using namespace mlir;
-using namespace hivm;
-
 LogicalResult isDiscreteMask(Operation *op, Value mask,
                              PatternRewriter &rewriter) {
   if (!mask)
@@ -125,22 +122,22 @@ struct DiscreteMaskAtomicConversion : OpRewritePattern<triton::AtomicRMWOp> {
     auto ptr = op.getPtr();
     auto src = op.getVal();
     auto mask = op.getMask();
-    RMWOp rmwOp = op.getAtomicRmwOp();
+    triton::RMWOp rmwOp = op.getAtomicRmwOp();
 
     if (failed(isDiscreteMask(op, mask, rewriter)))
       return failure();
 
-    const std::map<RMWOp, TypelessValue> initMap = {
-        {RMWOp::FADD, TypelessValue::Zero},
-        {RMWOp::ADD, TypelessValue::Zero},
-        {RMWOp::UMAX, TypelessValue::Zero},
-        {RMWOp::OR, TypelessValue::Zero},
-        {RMWOp::MIN, TypelessValue::Max},
-        {RMWOp::UMIN, TypelessValue::Max},
-        {RMWOp::AND, TypelessValue::Max},
-        {RMWOp::MAX, TypelessValue::Min},
-        {RMWOp::XOR, TypelessValue::Zero},
-        {RMWOp::XCHG, TypelessValue::Undefined},
+    const std::map<triton::RMWOp, TypelessValue> initMap = {
+        {triton::RMWOp::FADD, TypelessValue::Zero},
+        {triton::RMWOp::ADD, TypelessValue::Zero},
+        {triton::RMWOp::UMAX, TypelessValue::Zero},
+        {triton::RMWOp::OR, TypelessValue::Zero},
+        {triton::RMWOp::MIN, TypelessValue::Max},
+        {triton::RMWOp::UMIN, TypelessValue::Max},
+        {triton::RMWOp::AND, TypelessValue::Max},
+        {triton::RMWOp::MAX, TypelessValue::Min},
+        {triton::RMWOp::XOR, TypelessValue::Zero},
+        {triton::RMWOp::XCHG, TypelessValue::Undefined},
     };
     assert(initMap.find(rmwOp) != initMap.end());
     auto typelessVal = initMap.at(rmwOp);

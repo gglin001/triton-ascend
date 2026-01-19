@@ -35,12 +35,10 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/Builders.h"
-#include "bishengir/Dialect/HIVM/IR/HIVM.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 #include "triton/Dialect/Triton/IR/Dialect.h"
 
-#include "bishengir/Dialect/Annotation/IR/Annotation.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
@@ -493,8 +491,7 @@ void TritonToLinalgPass::addDynamicLegal(
       func::FuncDialect, arith::ArithDialect, math::MathDialect,
       linalg::LinalgDialect, affine::AffineDialect, scf::SCFDialect,
       cf::ControlFlowDialect, tensor::TensorDialect, LLVM::LLVMDialect,
-      bufferization::BufferizationDialect, memref::MemRefDialect,
-      annotation::AnnotationDialect, hivm::HIVMDialect>();
+      bufferization::BufferizationDialect, memref::MemRefDialect>();
 
   // add legal dialect on condition
   target.addLegalOp<ModuleOp>();
@@ -693,7 +690,7 @@ void TritonToLinalgPass::getDependentDialects(DialectRegistry &registry) const {
   registry.insert<func::FuncDialect, arith::ArithDialect, math::MathDialect,
                   linalg::LinalgDialect, affine::AffineDialect, scf::SCFDialect,
                   tensor::TensorDialect, bufferization::BufferizationDialect,
-                  memref::MemRefDialect, hivm::HIVMDialect, annotation::AnnotationDialect>();
+                  memref::MemRefDialect>();
 }
 
 LogicalResult TritonToLinalgPass::processDescriptorOperations(ModuleOp moduleOp)
@@ -900,19 +897,27 @@ void TritonToLinalgPass::runOnOperation() {
     signalPassFailure();
   }
 
-  // Calculate size of PointerCastOp precisely
-  SmallVector<hivm::PointerCastOp> castOps;
+  // Calculate size of pointer casts precisely
+  SmallVector<UnrealizedConversionCastOp> castOps;
 
-  moduleOp.walk([&](hivm::PointerCastOp op) { castOps.push_back(op); });
+  moduleOp.walk([&](UnrealizedConversionCastOp op) {
+    if (op->hasAttr(ConverterUtils::pointerCastAttrName)) {
+      castOps.push_back(op);
+    }
+  });
 
   for (auto op : castOps) {
     SmallVector<Operation *> userOps(op->getUsers().begin(),
                                      op->getUsers().end());
     IRRewriter rewriter(&getContext());
     rewriter.setInsertionPointAfter(op);
-    Value addr = op.getAddrs()[0];
+    auto inputs = op.getInputs();
+    if (inputs.empty()) {
+      continue;
+    }
+    Value addr = inputs[0];
     auto elementType =
-        cast<MemRefType>(op.getResult().getType()).getElementType();
+        cast<MemRefType>(op.getResult(0).getType()).getElementType();
     Value elementTypeSize;
     if (auto intType = dyn_cast<IntegerType>(elementType)) {
       elementTypeSize = rewriter.create<arith::ConstantOp>(op.getLoc(), rewriter.getIntegerAttr(addr.getType(), intType.getWidth() / 8));
@@ -964,16 +969,17 @@ void TritonToLinalgPass::runOnOperation() {
       offsetValue = rewriter.create<arith::MulIOp>(op.getLoc(), offsetValue, elementTypeSize);
       Value realAddr = rewriter.create<arith::AddIOp>(op.getLoc(), addr, offsetValue);
       auto memrefType = MemRefType::get({ShapedType::kDynamic}, elementType);
-      auto newCastOp = rewriter.create<hivm::PointerCastOp>(
-          op.getLoc(), memrefType, realAddr, dynamicSize);
-      auto markOp = rewriter.create<annotation::MarkOp>(op.getLoc(),
-                                                        newCastOp.getResult());
-      markOp->setAttr(hivm::AddressSpaceAttr::getMnemonic(),
-                      {hivm::AddressSpaceAttr::get(rewriter.getContext(),
-                                                   hivm::AddressSpace::GM)});
+      auto newCastOp = rewriter.create<UnrealizedConversionCastOp>(
+          op.getLoc(), memrefType, ValueRange{realAddr, dynamicSize});
+      newCastOp->setAttr(ConverterUtils::pointerCastAttrName,
+                         rewriter.getUnitAttr());
+      auto addressSpaceAttr = ArrayAttr::get(
+          rewriter.getContext(), {rewriter.getStringAttr("GM")});
+      newCastOp->setAttr("hivm.address_space", addressSpaceAttr);
       rewriter.replaceOpWithNewOp<memref::ReinterpretCastOp>(
           reinterpretCastOp,
-          cast<MemRefType>(reinterpretCastOp.getResult().getType()), newCastOp,
+          cast<MemRefType>(reinterpretCastOp.getResult().getType()),
+          newCastOp.getResult(0),
           ValueRange({}), reinterpretCastOp.getSizes(),
           reinterpretCastOp.getStrides(), SmallVector<int64_t>({0}),
           reinterpretCastOp.getStaticSizes(),
