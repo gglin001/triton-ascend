@@ -5,10 +5,10 @@ import torch.cpu
 import triton
 from triton.backends.compiler import GPUTarget
 from triton.backends.driver import GPUDriver
-from triton.backends import ascend
+from triton.backends.ascend import compiler, driver
 
 
-class FakeAscendBackend(ascend.compiler.AscendBackend):
+class FakeAscendBackend(compiler.AscendBackend):
     @staticmethod
     def supports_target(target: GPUTarget):
         return target.backend == "cpu"
@@ -62,10 +62,10 @@ class FakeAscendDriver(GPUDriver):
         cache.zero_()
 
 
-ascend.compiler.AscendBackend = FakeAscendBackend  # noqa
+compiler.AscendBackend = FakeAscendBackend  # noqa
 # not work
-ascend.compiler.supports_target = FakeAscendBackend.supports_target  # noqa
-ascend.driver.XtensaDriver = FakeAscendDriver  # noqa
+compiler.supports_target = FakeAscendBackend.supports_target  # noqa
+driver.XtensaDriver = FakeAscendDriver  # noqa
 
 triton.runtime.driver.set_active(FakeAscendDriver())
 
