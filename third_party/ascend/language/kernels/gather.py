@@ -29,7 +29,7 @@ import triton.language as tl
 from triton.language.core import constexpr
 
 
-@triton.jit
+# @triton.jit
 def gather_2d_simd(
     src_ptr,
     idx_ptr,

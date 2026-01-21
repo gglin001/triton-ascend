@@ -26,6 +26,7 @@ option(TRITON_BUILD_TUTORIALS "Build C++ Triton tutorials" ON)
 option(TRITON_BUILD_PYTHON_MODULE "Build Python Triton bindings" OFF)
 option(TRITON_BUILD_PROTON "Build the Triton Proton profiler" ON)
 option(TRITON_BUILD_UT "Build C++ Triton Unit Tests" ON)
+option(TRITON_BUILD_WITH_RISCV_LLVM_COMPONENTS "Build C++ Triton with extra riscv components" OFF)
 set(TRITON_CODEGEN_BACKENDS "" CACHE STRING "Enable different codegen backends")
 
 # Ensure Python3 vars are set correctly
@@ -107,7 +108,7 @@ endfunction()
 
 
 # Disable warnings that show up in external code (gtest;pybind11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-covered-switch-default -fvisibility=hidden")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-covered-switch-default -fvisibility=hidden -Wno-deprecated-declarations")
 
 include_directories(".")
 include_directories(${MLIR_INCLUDE_DIRS})
@@ -154,7 +155,12 @@ if(TRITON_BUILD_PYTHON_MODULE)
     include_directories(${Python3_INCLUDE_DIRS})
     include_directories(${pybind11_INCLUDE_DIR})
     link_directories(${Python3_LIBRARY_DIRS})
-    link_libraries(${Python3_LIBRARIES})
+    if(APPLE)
+      # Avoid linking libpython directly to prevent loading a second runtime.
+      add_link_options(-undefined dynamic_lookup)
+    else()
+      link_libraries(${Python3_LIBRARIES})
+    endif()
     add_link_options(${Python3_LINK_OPTIONS})
   endif()
 
@@ -259,6 +265,9 @@ if(TRITON_BUILD_PYTHON_MODULE)
                   ${PYTHON_SRC_PATH}/interpreter.cc
                   ${PYTHON_SRC_PATH}/llvm.cc)
 
+  if (TRITON_BUILD_WITH_RISCV_LLVM_COMPONENTS)
+    list(APPEND TRITON_LIBRARIES LLVMRISCVCodeGen LLVMRISCVAsmParser)
+  endif()
   # Link triton with its dependencies
   target_link_libraries(triton PUBLIC ${TRITON_LIBRARIES})
   if(WIN32)
