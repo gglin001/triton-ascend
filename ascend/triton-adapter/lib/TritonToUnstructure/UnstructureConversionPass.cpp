@@ -25,6 +25,7 @@
 #include "Utils/Utils.h"
 #include "triton/Dialect/Triton/IR/Dialect.h"
 
+#include "bishengir/Dialect/Annotation/IR/Annotation.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
@@ -48,8 +49,9 @@ template <typename MemAccOpTy>
 bool UnstructuredMemAccessConverter<MemAccOpTy>::checkUnstructureAnnotated(
     MemAccOpTy op, PatternRewriter &rewriter) const {
   return llvm::any_of(op->getUsers(), [&rewriter](Operation *user) {
-    if (user->hasAttr("mayDiscretememaccess") && user->getNumResults() == 0) {
-      rewriter.eraseOp(user);
+    auto annotationOp = dyn_cast<annotation::MarkOp>(user);
+    if (annotationOp && annotationOp->hasAttr("mayDiscretememaccess")) {
+      rewriter.eraseOp(annotationOp);
       return true;
     }
     return false;
@@ -60,8 +62,9 @@ template <>
 bool UnstructuredMemAccessConverter<triton::StoreOp>::checkUnstructureAnnotated(
     triton::StoreOp op, PatternRewriter &rewriter) const {
   return llvm::any_of(op.getValue().getUsers(), [&rewriter](Operation *user) {
-    if (user->hasAttr("mayDiscretememaccess") && user->getNumResults() == 0) {
-      rewriter.eraseOp(user);
+    auto annotationOp = dyn_cast<annotation::MarkOp>(user);
+    if (annotationOp && annotationOp->hasAttr("mayDiscretememaccess")) {
+      rewriter.eraseOp(annotationOp);
       return true;
     }
     return false;

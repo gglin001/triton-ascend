@@ -172,11 +172,11 @@ def ttir_to_linalg(mod, metadata, opt, *, named_ops=False):
             "--triton-to-structured",
             f"--discrete-mask-access-conversion=compile-on-910-95={compile_on_910_95} "\
             f"force-simt-template={force_simt_template}",
-            # "--triton-to-annotation",
+            "--triton-to-annotation",
             f"--triton-to-unstructure=compile-on-910-95={compile_on_910_95} "\
             f"force-simt-template={force_simt_template}",
-            # "--triton-to-hivm",
-            # "--triton-to-hfusion",
+            "--triton-to-hivm",
+            "--triton-to-hfusion",
             "--triton-to-llvm",
             "--bubble-up-operation",
             f"--triton-to-linalg=global-kernel=false named-ops={named_ops} "\

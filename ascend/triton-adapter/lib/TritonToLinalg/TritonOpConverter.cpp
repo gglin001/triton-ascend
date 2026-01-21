@@ -45,6 +45,8 @@
 #include "mlir/Dialect/Utils/ReshapeOpsUtils.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/ValueRange.h"
+#include "bishengir/Dialect/Annotation/IR/Annotation.h"
+#include "bishengir/Dialect/HFusion/IR/HFusion.h"
 
 namespace TTOpConverters {
 using namespace mlir;
@@ -178,7 +180,8 @@ LogicalResult FpToFpCanonicalizer::matchAndRewrite(
   unsigned dstBitwidth = dstElemType.getIntOrFloatBitWidth();
   
   // Create round_mode attribute (RINT for RTNE)
-  auto roundModeAttr = rewriter.getStringAttr("RINT");
+  auto roundModeAttr = hfusion::RoundModeAttr::get(
+      rewriter.getContext(), hfusion::RoundMode::RINT);
   
   if (srcBitwidth > dstBitwidth) {
     // Downcast: use arith.truncf with round_mode=rint
@@ -2607,11 +2610,11 @@ IndexSelectSimdConverter::matchAndRewrite(triton::IndexSelectSimdOp op, OpAdapto
   } else {
     // For index_select on non-trailing axes, add stride alignment annotation
     // This tells the backend to handle address alignment for DMA operations
-    dstSubview->setAttr(
-        "hfusion.stride_align_dims",
-        rewriter.getDenseI32ArrayAttr({static_cast<int32_t>(dim)}));
-    dstSubview->setAttr("hfusion.stride_align_value_in_byte",
-                        rewriter.getDenseI32ArrayAttr({32}));
+    auto dstMarkOp = rewriter.create<annotation::MarkOp>(loc, dstSubview);
+    dstMarkOp->setAttr("hfusion.stride_align_dims",
+                       rewriter.getDenseI32ArrayAttr({static_cast<int32_t>(dim)}));
+    dstMarkOp->setAttr("hfusion.stride_align_value_in_byte",
+                       rewriter.getDenseI32ArrayAttr({32}));
     
     // Copy from source to destination
     rewriter.create<memref::CopyOp>(loc, srcSubview, dstSubview);

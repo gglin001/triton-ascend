@@ -65,7 +65,8 @@
 #include "TritonToStructured/CannonicalizerConverter.h"
 #include "Utils/InterleaveOptimization.h"
 #include "Utils/Utils.h"
-
+#include "bishengir/Dialect/Annotation/IR/Annotation.h"
+#include "bishengir/Dialect/HIVM/Utils/Utils.h"
 
 #define DEBUG_TYPE "triton-mem-op-converter"
 
@@ -149,6 +150,12 @@ StoreConverter::matchAndRewrite(triton::StoreOp op,
         return failure();
     }
 
+    // insert sync_block_lock
+    auto lockVar = createSyncBlockLockVar(rewriter, loc);
+    if (oldMask && !newMask) {
+        rewriter.create<hivm::SyncBlockLockOp>(loc, lockVar);
+    }
+    
     auto reshapeResult = tf.materializeImplicitReshape(
         oldValue, loc, rewriter);
     auto selectResult = tf.materializeImplicitSelect(
@@ -159,6 +166,10 @@ StoreConverter::matchAndRewrite(triton::StoreOp op,
     auto storeOp = rewriter.create<triton::StoreOp>(loc, newPtr, permuteResult, newMask, 
                op.getBoundaryCheck(), op.getCache(), op.getEvict());
     
+    // insert sync_block_unlock
+    if (oldMask && !newMask) {
+        rewriter.create<hivm::SyncBlockUnlockOp>(loc, lockVar);
+    }
     rewriter.eraseOp(op);
     return success();
 }
@@ -461,4 +472,15 @@ bool MemOpTransformer::applyPermuteOnMask() {
     return true;
 }
 
+hivm::CreateSyncBlockLockOp createSyncBlockLockVar(OpBuilder &builder,
+                                                   Location loc) {
+  SmallVector<int64_t> shape = {1};
+  auto elementType = builder.getI64Type();
+  Type memrefType = MemRefType::get(shape, elementType);
+
+  auto createSyncBlockLockOp =
+      builder.create<hivm::CreateSyncBlockLockOp>(loc, memrefType,
+                                                  Value());
+  return createSyncBlockLockOp;
+}
 }

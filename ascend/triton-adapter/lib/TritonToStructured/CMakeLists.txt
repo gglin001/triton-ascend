@@ -23,4 +23,5 @@ add_triton_library(TritonToStructured
   MLIRTritonNPUUtils
   MLIRSCFTransforms
   MLIRLinalgTransforms
+  BiShengIRHIVMDialect
 )

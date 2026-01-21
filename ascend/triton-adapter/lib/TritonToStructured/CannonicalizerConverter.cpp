@@ -61,6 +61,7 @@
 #include "TritonToStructured/PtrAnalysis.h"
 #include "Utils/InterleaveOptimization.h"
 #include "Utils/Utils.h"
+#include "bishengir/Dialect/Annotation/IR/Annotation.h"
 
 #define DEBUG_TYPE "triton-cannonicalizer-converter"
 

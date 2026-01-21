@@ -32,9 +32,12 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/Builders.h"
+#include "bishengir/Dialect/HIVM/IR/HIVM.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 #include "triton/Dialect/Triton/IR/Dialect.h"
+
+#include "bishengir/Dialect/Annotation/IR/Annotation.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
@@ -73,7 +76,7 @@ void TritonToStructuredPass::getDependentDialects(DialectRegistry &registry) con
   registry.insert<func::FuncDialect, arith::ArithDialect, math::MathDialect,
                   linalg::LinalgDialect, affine::AffineDialect, scf::SCFDialect,
                   tensor::TensorDialect, bufferization::BufferizationDialect,
-                  memref::MemRefDialect>();
+                  memref::MemRefDialect, hivm::HIVMDialect, annotation::AnnotationDialect>();
 }
 
 void TritonToStructuredPass::populateTritonToStructuredCanonicalizationPatterns(RewritePatternSet &patterns) {

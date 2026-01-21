@@ -24,6 +24,9 @@
 #include "TritonToLinalg/TritonToLinalgPass.h"
 #include "Utils/Utils.h"
 
+#include "bishengir/Dialect/Annotation/IR/Annotation.h"
+#include "bishengir/Dialect/HIVM/IR/HIVM.h"
+
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Arith/Utils/Utils.h"
@@ -1043,11 +1046,9 @@ void BlockDataParser::rewriteAddPtr(
     auto rtype = cast<triton::PointerType>(intToPtrOp.getResult().getType());
     auto memrefType =
         MemRefType::get({ShapedType::kDynamic}, rtype.getPointeeType());
-    auto pointerCastOp = rewriter.create<UnrealizedConversionCastOp>(
+    auto hivmPointCastOp = rewriter.create<hivm::PointerCastOp>(
         intToPtrOp.getLoc(), memrefType, ValueRange{intToPtrOp.getSrc()});
-    pointerCastOp->setAttr(ConverterUtils::pointerCastAttrName,
-                           rewriter.getUnitAttr());
-    data.setSource(pointerCastOp.getResult(0));
+    data.setSource(hivmPointCastOp.getResult());
   }
 
   if (data.hasResElemTy()) {

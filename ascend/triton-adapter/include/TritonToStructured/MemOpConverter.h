@@ -33,6 +33,7 @@
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "triton/Dialect/Triton/IR/Dialect.h"
+#include "bishengir/Dialect/HIVM/IR/HIVM.h"
 #include "TritonToStructured/PtrAnalysis.h"
 #include "TritonToStructured/MaskAnalysis.h"
 
@@ -98,6 +99,10 @@ public:
 
     bool applyPermuteOnMask();
 };
+
+// Create local lock var
+hivm::CreateSyncBlockLockOp createSyncBlockLockVar(OpBuilder &builder,
+                                                   Location loc);
 
 }  // namespace MemOpConverter
 
