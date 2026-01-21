@@ -1,3 +1,10 @@
+# debug
+_demos
+_demos/
+
+# ln -s
+llvm-ascend
+
 # Triton builds
 build/
 build-*/

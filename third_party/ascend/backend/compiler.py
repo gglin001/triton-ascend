@@ -66,6 +66,63 @@ try:
 except Exception as e:
     is_compile_on_910_95 = False
 
+# `Ascend910_9599` needs latest compiler
+is_compile_on_910_95 = False
+
+TRITON_ASCEND_DUMP_DIR = os.environ.get("TRITON_ASCEND_DUMP_DIR", "_demos")
+if not getattr(tempfile, "_triton_ascend_tmp_wrapped", False):
+    tempfile.TemporaryDirectory = functools.partial(
+        tempfile.TemporaryDirectory,
+        dir=TRITON_ASCEND_DUMP_DIR,
+        delete=False,
+    )
+    tempfile._triton_ascend_tmp_wrapped = True
+_subprocess_run = subprocess.run
+if not getattr(subprocess.run, "_triton_ascend_wrapped", False):
+    def subprocess_run(cmd_list, **kwargs):
+        if cmd_list[0].endswith("bishengir-compile"):
+            cmd_list += [
+                # "--bishengir-print-ir-after-all",
+                # "--mlir-disable-threading",
+                # "--debug",
+                # "--enable-cpu-runner=true",
+            ]
+        elif cmd_list[0].endswith("triton-adapter-opt"):
+            cmd_list += [
+                # "--mlir-print-ir-before-all",
+                "--mlir-print-ir-after-all",
+                "--mlir-print-ir-module-scope",
+                f"--mlir-print-ir-tree-dir={TRITON_ASCEND_DUMP_DIR}/_adapter_ir",
+                "--mlir-disable-threading",
+                # "--debug",
+            ]
+
+        print(f"cmd_list: \n {' '.join(cmd_list)} \n")
+        capture_output = kwargs.pop("capture_output", None)
+        if 0 and capture_output:
+            ret = _subprocess_run(
+                cmd_list,
+                capture_output=True,
+                **kwargs,
+            )
+            print(f"ret: \n{ret}\n")
+            return ret
+
+        import sys
+
+        kwargs.setdefault("stdout", sys.stdout)
+        kwargs.setdefault("stderr", sys.stderr)
+        _subprocess_run(
+            cmd_list,
+            capture_output=False,
+            **kwargs,
+        )
+        return subprocess.CompletedProcess(cmd_list, 0, b"", b"")
+
+    subprocess_run._triton_ascend_wrapped = True
+    subprocess.run = subprocess_run
+
+
 # TODO: materialize the concrete min shape
 def min_dot_size(target: GPUTarget):
     return lambda lhsType, rhsType: (1, 1, 1)
@@ -490,7 +547,8 @@ def linalg_to_bin_enable_npu_compile_A2_A3(linalg: str, metadata, opt):
         bin_path = os.path.join(tmpdir, bin_file_with_ext)
         callback_path = os.path.join(tmpdir, "libkernel.so")
         _compile_option_list = [
-            f"--target={NPUUtils().get_arch()}",
+            # f"--target={NPUUtils().get_arch()}",
+            f"--target={metadata['target'].arch}",
         ]
         multibuffer = metadata["multibuffer"]
         if multibuffer is not None:
@@ -697,6 +755,14 @@ class CPUOptions:
     allow_fp8e4nv: bool = False
     max_num_imprecise_acc_default: int = 0
     extern_libs: dict = None
+
+    # debug
+    allowed_dot_input_precisions: Tuple[str] = ("ieee", "hf32")
+    force_simt_only: bool = False
+    enable_nd2nz_on_vector: bool = False
+    enable_select_analysis: bool = False
+    compile_on_910_95: bool = False
+    force_simt_template: bool = False
 
     def hash(self):
         key = "_".join([f"{name}-{val}" for name, val in self.__dict__.items()])
