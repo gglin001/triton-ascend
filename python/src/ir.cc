@@ -215,6 +215,7 @@ void init_triton_ir(py::module &&m) {
       .value("TF32", InputPrecision::TF32)
       .value("TF32x3", InputPrecision::TF32x3)
       .value("IEEE", InputPrecision::IEEE)
+      .value("HF32", InputPrecision::HF32)
       .export_values();
 
   py::enum_<F8F6F4Type>(m, "F8F6F4TY", py::module_local())
@@ -601,7 +602,12 @@ void init_triton_ir(py::module &&m) {
   static py::class_<TritonOpBuilder> builderClass(
       m, "builder", py::module_local(), py::dynamic_attr());
   ir::builderClassPtr = &builderClass;
-  builderClass.def(py::init<MLIRContext *>())
+  builderClass.def(py::init<MLIRContext *, const std::string &>(),
+                   py::arg("context"),
+                   py::arg("compile_mode") = "simd",
+                   "Create a TritonOpBuilder with optional compile_mode (simt or simd, default: simd)")
+ 	    .def("is_simt_mode", &TritonOpBuilder::isSimtMode,
+           "Check if the compile mode is simt")
       // getters
       .def("create_module",
            [](TritonOpBuilder &self) -> ModuleOp {
@@ -722,6 +728,16 @@ void init_triton_ir(py::module &&m) {
            [](TritonOpBuilder &self, double v) -> Value {
              return self.create<arith::ConstantOp>(
                  self.getBuilder().getF64FloatAttr(v));
+           })
+      .def("get_fp8e4nv",
+           [](TritonOpBuilder &self, double v) -> Value {
+             return self.create<arith::ConstantOp>(
+                 FloatAttr::get(self.getBuilder().getFloat8E4M3FNType(), v));
+           })
+      .def("get_fp8e5",
+           [](TritonOpBuilder &self, double v) -> Value {
+             return self.create<arith::ConstantOp>(
+                 FloatAttr::get(self.getBuilder().getFloat8E5M2Type(), v));
            })
       .def("get_null_value",
            [](TritonOpBuilder &self, Type type) -> Value {

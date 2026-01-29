@@ -214,6 +214,7 @@ def alloc(
 def to_buffer(
     tensor: tl.tensor,
     space: address_space = None,
+    bind_buffer: buffer = None,
     _builder=None
 ) -> buffer:
     """
@@ -225,7 +226,7 @@ def to_buffer(
     :type space: address_space
     """
     return semantic.to_buffer(
-        tensor, space, _builder
+        tensor, space, bind_buffer, _builder
     )
 
 

@@ -133,6 +133,10 @@ def compile_hint_impl(ptr: tensor, hint_name: str, hint_val, builder: ir.builder
 
 @builtin
 def compile_hint(ptr, hint_name, hint_val=None, _builder=None):
+    # simt mode does not support hint annotations
+    if _builder.is_simt_mode():
+        return
+
     def _unwrap(val):
         return _unwrap_if_constexpr(val) if val else val
 

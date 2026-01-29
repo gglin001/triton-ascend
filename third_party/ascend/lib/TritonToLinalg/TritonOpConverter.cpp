@@ -195,31 +195,37 @@ LogicalResult SelectCanonicalizer::matchAndRewrite(
   rewriter.setInsertionPointAfter(insertSliceOp);
   Value zeroIndex = rewriter.create<arith::ConstantIndexOp>(loc, 0);
   auto offsets = mstate.offsets;
-  SmallVector<Value> isNegVals;
-  for (auto &o : offsets) {
+  SmallVector<Value> isInvalidVals;
+  for (size_t i = 0; i < offsets.size(); i++) {
+    auto &o = offsets[i];
     if (o.is<Value>()) {
       auto oVal = o.get<Value>();
+      int64_t dimSize = type.getShape()[i];
+      Value sizeIndex = rewriter.create<arith::ConstantIndexOp>(loc, dimSize);
       Value isNegative = rewriter.create<arith::CmpIOp>(
           loc, arith::CmpIPredicate::slt, oVal, zeroIndex);
-      isNegVals.push_back(isNegative);
+      Value isOutOfRange = rewriter.create<arith::CmpIOp>(
+          loc, arith::CmpIPredicate::sge, oVal, sizeIndex);
+      isInvalidVals.push_back(isNegative);
+      isInvalidVals.push_back(isOutOfRange);
     }
   }
 
-  if (isNegVals.empty()) {
+  if (isInvalidVals.empty()) {
     rewriter.replaceOp(op, insertSliceOp);
     return success();
   }
   // At least one value
-  Value negVal = isNegVals[0];
-  if (isNegVals.size() > 1) {
-    for (int i = 1; i < isNegVals.size(); ++i) {
-      auto tmpOrOp = rewriter.create<arith::OrIOp>(loc, isNegVals[i], negVal);
-      negVal = tmpOrOp.getResult();
+  Value invalidVal = isInvalidVals[0];
+  if (isInvalidVals.size() > 1) {
+    for (int i = 1; i < isInvalidVals.size(); ++i) {
+      auto tmpOrOp = rewriter.create<arith::OrIOp>(loc, isInvalidVals[i], invalidVal);
+      invalidVal = tmpOrOp.getResult();
     }
   }
   // else: what if the number of negative value checks is > 1?
   auto ifOp = rewriter.create<scf::IfOp>(loc, TypeRange{falseTensor.getType()},
-                                         negVal, true /* addThenBlock */,
+                                         invalidVal, true /* addThenBlock */,
                                          true /* addElseBlock */);
   // thenBuilder
   rewriter.setInsertionPointToStart(&ifOp.getThenRegion().front());

@@ -33,6 +33,12 @@ import pybind11
 
 triton_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+os.environ.setdefault("TRITON_BUILD_WITH_CCACHE", "true")
+os.environ.setdefault("TRITON_BUILD_WITH_CLANG_LLD", "true")
+os.environ.setdefault("TRITON_BUILD_PROTON", "OFF")
+os.environ.setdefault("TRITON_WHEEL_NAME", "triton-ascend")
+os.environ.setdefault("TRITON_APPEND_CMAKE_ARGS", "-DTRITON_BUILD_UT=OFF")
+
 
 @dataclass
 class Backend:
@@ -812,6 +818,16 @@ setup(
         "Programming Language :: Python :: 3.13",
     ],
     test_suite="tests",
+    install_requires=[
+        "attrs==24.2.0",
+        "numpy==1.26.4",
+        "scipy==1.13.1",
+        "decorator==5.1.1",
+        "psutil==6.0.0",
+        "pytest==8.3.2",
+        "pytest-xdist==3.6.1",
+        "pyyaml"
+    ],
     extras_require={
         "build": [
             "cmake>=3.20",

@@ -320,9 +320,9 @@ void init_triton_ascend_ir(py::module &&m) {
 
 void init_triton_ascend_passes_ttir(py::module &&m) {
   m.def("add_triton_to_structure", [](mlir::PassManager &pm,
-    bool enableMaskFallbackConversion, bool optimizeDynamicOffset) {
+    bool enableMaskFallbackConversion, bool optimizeDynamicOffset, bool compileOn91095) {
     pm.addPass(mlir::triton::createTritonToStructuredPass(
-      enableMaskFallbackConversion, optimizeDynamicOffset));});
+      enableMaskFallbackConversion, optimizeDynamicOffset, compileOn91095)); });
 
   m.def("add_triton_to_annotation", [](mlir::PassManager &pm) {
     pm.addPass(mlir::triton::createTritonToAnnotationPass());});

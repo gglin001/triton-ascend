@@ -217,6 +217,19 @@ class NPUDriver(DriverBase):
         cache_size = 192 * 1024 * 1024
         return get_backend_func("get_empty_tensor", cache_size // 4)
 
+   
+# fixed the issue of corrupted gch header files in multi-threaded scenarios.
+def _precompile_npu_ext_with_lock(header_path):
+    import fcntl
+    src_path = os.path.dirname(header_path)
+    lock_path = os.path.join(src_path, "precompiled.lock")
+    with open(lock_path, "a+") as f:
+        try:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            _precompile_npu_ext(header_path)
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
+
 
 def make_npu_launcher_stub(header_src, wrapper_src, debug=False):
     """
@@ -229,7 +242,7 @@ def make_npu_launcher_stub(header_src, wrapper_src, debug=False):
     # if precompile header file and its gch file not exist, do precompile
     if header_path is None and gch_path is None:
         header_path = cache.put(header_src, "precompiled.h", binary=False)
-        _precompile_npu_ext(header_path)
+        _precompile_npu_ext_with_lock(header_path)
 
     # try to get cached file
     so_cache_key = hashlib.sha256(wrapper_src.encode("utf-8")).hexdigest()
@@ -694,12 +707,12 @@ extern "C" {
     ret = rtKernelLaunch(func, blockNum, static_cast<void*>(&args), sizeof(args), NULL, stream);
 """
     if compile_on_910_95 and enable_simt:
-        cpp_kernel_launch = """
-    rtArgsEx_t argsInfo = {};
+        cpp_kernel_launch = f"""
+    rtArgsEx_t argsInfo = {{}};
     argsInfo.args = static_cast<void*>(&args);
     argsInfo.argsSize = sizeof(args);
-    rtTaskCfgInfo_t cfgInfo = {};
-    cfgInfo.localMemorySize = 216 * 1024;
+    rtTaskCfgInfo_t cfgInfo = {{}};
+    cfgInfo.localMemorySize = {metadata.shared_mem_dynamic_size};
     ret = rtKernelLaunchWithFlagV2(func, blockNum, &argsInfo, NULL, stream, 0, &cfgInfo);
 """
 

@@ -1,6 +1,11 @@
 """isort:skip_file"""
 # Import order is significant here.
-
+try:
+    import acl
+    is_compile_on_910_95 = acl.get_soc_name().startswith("Ascend910_95")
+except Exception as e:
+    is_compile_on_910_95 = False
+    
 from . import math
 from . import extra
 from .standard import (

@@ -20,9 +20,11 @@ RUN apt update && \
     rm -rf /var/lib/apt/lists/* && \
     update-ca-certificates
 
-RUN echo "deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" > /etc/apt/sources.list.d/deadsnakes-ppa.list && \
-    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BA6932366A755776 && \
-    apt-get update
+RUN curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xBA6932366A755776" \
+    | gpg --dearmor > /usr/share/keyrings/deadsnakes-ppa.gpg  && \
+    chmod 644 /usr/share/keyrings/deadsnakes-ppa.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/deadsnakes-ppa.gpg] http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" > /etc/apt/sources.list.d/deadsnakes-ppa.list && \
+    apt-get update || true
 
 RUN apt update && \
     apt install --yes --no-install-recommends --no-install-suggests \
@@ -45,9 +47,11 @@ RUN apt update && \
     apt clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.9 && \
-    curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10 && \
-    curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11 && \
+RUN curl -sSLk https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && \
+    python3.9 /tmp/get-pip.py && \
+    python3.10 /tmp/get-pip.py && \
+    python3.11 /tmp/get-pip.py && \
+    rm -f /tmp/get-pip.py && \ 
     update-alternatives --install /usr/bin/python python /usr/bin/python3.9 1 \
       --slave /usr/bin/python3 python3 /usr/bin/python3.9 \
       --slave /usr/bin/pip pip /usr/local/bin/pip3.9 \
@@ -64,7 +68,8 @@ RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.9 && \
     update-alternatives --set python /usr/bin/python3.10
 
 # Install triton requirments
-COPY Makefile requirements.txt requirements_dev.txt llvm-hash.txt build/
+COPY Makefile requirements.txt requirements_dev.txt  build/
+COPY cmake/llvm-hash.txt build/cmake/
 
 RUN cd build && \
     make install-deps && \

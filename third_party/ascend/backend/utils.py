@@ -151,21 +151,28 @@ def _get_llvm_path(path: str, *paths) -> str:
 
 
 def _get_npucompiler_path() -> str:
-    npu_compiler_path = shutil.which("bishengir-compile")
-    if npu_compiler_path is None:
-        npu_compiler_root = os.getenv("TRITON_NPU_COMPILER_PATH", "")
-        if npu_compiler_root is None:
-            raise EnvironmentError(
-                "Couldn't find executable bishengir-compile or TRITON_NPU_COMPILER_PATH."
-            )
-        npu_compiler_path = os.path.join(npu_compiler_root, "npuc")
-    return npu_compiler_path
+    ascend_dir = os.path.dirname(os.path.abspath(__file__))
+    env = os.environ.copy()
+    npu_compiler_path = os.path.join(ascend_dir, "bishengir", "bin", "bishengir-compile")
+    if os.path.exists(npu_compiler_path):
+        npuir_env_path = os.path.dirname(npu_compiler_path)
+        env["PATH"] = npuir_env_path + ":" + env["PATH"]
+    else:
+        npu_compiler_path = shutil.which("bishengir-compile")
+        if npu_compiler_path is None:
+            npu_compiler_root = os.getenv("TRITON_NPU_COMPILER_PATH", None)
+            if npu_compiler_root is None:
+                raise EnvironmentError(
+                    "Couldn't find executable bishengir-compile or TRITON_NPU_COMPILER_PATH."
+                )
+            npu_compiler_path = os.path.join(npu_compiler_root, "npuc")
+    return npu_compiler_path, env
 
 
 def _get_bisheng_path() -> str:
     bisheng_path = shutil.which("bisheng")
     if bisheng_path is None:
-        npu_compiler_root = os.getenv("TRITON_NPU_COMPILER_PATH", "")
+        npu_compiler_root = os.getenv("TRITON_NPU_COMPILER_PATH", None)
         if npu_compiler_root is None:
             raise EnvironmentError(
                 "Couldn't find executable bisheng or TRITON_NPU_COMPILER_PATH"
@@ -188,7 +195,7 @@ def _is_valid_bishengir_path(path: str) -> bool:
 # if bishengir-compile is a newer version which does not generate kernel_reloc.o
 # any more.
 def _check_bishengir_api_change() -> bool:
-    bishengir_path = _get_npucompiler_path()
+    bishengir_path, _ = _get_npucompiler_path()
     if not _is_valid_bishengir_path(bishengir_path):
         print(f"ERROR: Invalid bishengir path format: {bishengir_path}")
         return False
@@ -211,7 +218,7 @@ def _check_bishengir_api_change() -> bool:
 
 
 def _check_bishengir_is_regbased() -> bool:
-    bishengir_path = _get_npucompiler_path()
+    bishengir_path, _ = _get_npucompiler_path()
     if not _is_valid_bishengir_path(bishengir_path):
         print(f"ERROR: Invalid bishengir path format: {bishengir_path}")
         return False
@@ -466,7 +473,7 @@ def convert_dtype_to_numpy(dtype):
 
 
 def _check_bishengir_able_save_ir() -> bool:
-    bishengir_path = _get_npucompiler_path()
+    bishengir_path, _ = _get_npucompiler_path()
     if not _is_valid_bishengir_path(bishengir_path):
         print(f"ERROR: Invalid bishengir path format: {bishengir_path}")
         return False

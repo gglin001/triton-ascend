@@ -67,9 +67,9 @@ def test_atomic_add(param_list):
     block_size = shape[0] * shape[1] / ncore
     split_size = shape[0] // ncore
     x0_value = 3
-    x0 = torch.full(shape, x0_value, dtype = eval(f'torch.{dtype}')).npu()
-    x1 = torch.full((split_size, shape[1]), 2, dtype = eval(f'torch.{dtype}')).npu()
-    y = torch.full((split_size, shape[1]), -10, dtype = eval(f'torch.{dtype}')).npu()
+    x0 = torch.full(shape, x0_value, dtype=eval(f'torch.{dtype}')).npu()
+    x1 = torch.full((split_size, shape[1]), 2, dtype=eval(f'torch.{dtype}')).npu()
+    y = torch.full((split_size, shape[1]), -10, dtype=eval(f'torch.{dtype}')).npu()
 
     y_ref = x1 + 0
     x1_ref = x1 + ncore * x0_value
@@ -77,6 +77,31 @@ def test_atomic_add(param_list):
     n_elements = shape[0] * shape[1]
     atomic_add[ncore, 1, 1](x0, x1, y, n_elements, BLOCK_SIZE=split_size * shape[1])
     test_common.validate_cmp(dtype, x1, x1_ref)
+
+@pytest.mark.parametrize('param_list',
+                         [
+                             ['int16', (32, 32), 1],
+                             ['int32', (32, 32), 1],
+                             ['float32', (32, 32), 1],
+                             ['float16', (64, 64), 1],
+                         ]
+                         )
+def test_atomic_add_return_value(param_list):
+    dtype, shape, ncore = param_list
+    block_size = shape[0] * shape[1] / ncore
+    split_size = shape[0] // ncore
+    x0_value = 3
+    x0 = torch.full(shape, x0_value, dtype=eval(f'torch.{dtype}')).npu()
+    x1 = torch.full((split_size, shape[1]), 2, dtype=eval(f'torch.{dtype}')).npu()
+    y = torch.full((split_size, shape[1]), -10, dtype=eval(f'torch.{dtype}')).npu()
+
+    y_ref = x1 + 0
+    x1_ref = x1 + ncore * x0_value
+
+    n_elements = shape[0] * shape[1]
+    atomic_add[ncore, 1, 1](x0, x1, y, n_elements, BLOCK_SIZE=split_size * shape[1])
+    test_common.validate_cmp(dtype, x1, x1_ref)
+    test_common.validate_cmp(dtype, y, y_ref)
 
 @triton.jit
 def atomic_add_2d(in_ptr0, out_ptr0, out_ptr1, numel_0, numel_1, BLOCK_SIZE_0 : tl.constexpr, BLOCK_SIZE_1 : tl.constexpr):
@@ -103,9 +128,9 @@ def test_atomic_add_2d(param_list):
     block_size_0 = split_size
     block_size_1 = shape[1]
     x0_value = 3
-    x0 = torch.full(shape, x0_value, dtype = eval('torch.float32')).npu()
-    x1 = torch.full((split_size, shape[1]), 2, dtype = eval('torch.float32')).npu()
-    y = torch.full((split_size, shape[1]), -10, dtype = eval('torch.float32')).npu()
+    x0 = torch.full(shape, x0_value, dtype=eval('torch.float32')).npu()
+    x1 = torch.full((split_size, shape[1]), 2, dtype=eval('torch.float32')).npu()
+    y = torch.full((split_size, shape[1]), -10, dtype=eval('torch.float32')).npu()
 
     y_ref = x1 + 0
     x1_ref = x1 + ncore * x0_value

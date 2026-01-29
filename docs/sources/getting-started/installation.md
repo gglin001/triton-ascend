@@ -13,7 +13,7 @@
 
 您可以访问昇腾社区官网，根据其提供的软件安装指引完成 CANN 的安装配置。
 
-在安装过程中，CANN 版本“**{version}**”请选择 **8.3.RC1**，并根据实际环境指定CPU架构 “**{arch}**”(aarch64/x86_64)、NPU硬件型号“**{chip_type}**”（910b等）对应的软件包。
+在安装过程中，CANN 版本“**{version}**”请选择 **8.5.0**，并根据实际环境指定CPU架构 “**{arch}**”(aarch64/x86_64)、NPU硬件型号“**{chip_type}**”（910b等）对应的软件包。
 
 建议下载安装:
 
@@ -107,6 +107,16 @@ apt install ccache # optional
 ```bash
 pip install ninja cmake wheel pybind11 # build-time dependencies
 ```
+### 快速安装
+安装过程会自动下载并安装LLVM等依赖；若网络情况不佳，需要本地安装LLVM，请参考下面的基于LLVM构建步骤。
+若本地已经安装好了对应的LLVM，可添加环境变量：export LVM_SYSPATH=/path/to/LLVM。
+```bash
+# 常规安装
+pip install ./python
+# 开发者安装
+pip install -e python
+```
+
 
 ### 基于LLVM构建
 
