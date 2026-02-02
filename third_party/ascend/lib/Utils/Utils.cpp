@@ -86,7 +86,7 @@ std::optional<int64_t> getLastStrideOfReinterpretCastOp(memref::ReinterpretCastO
   }
 
   OpFoldResult lastStride = mixedStrides.back();
-  
+
   if (op.getStaticStrides().back() > 0) {
     return op.getStaticStrides().back();
   } else if (isa<BlockArgument>(op.getStrides().back()) ) {
@@ -889,14 +889,17 @@ void addReduceWithIndexAttr(ReduceWithIndexParams params, ConversionPatternRewri
     reduceOp->setAttr(unsignedSrcRef, rewriter.getStringAttr(unsignedSrcStr));
 }
 
-std::optional<ReduceWithIndexParams> getReduceWithIndexParams(triton::ReduceOp reduceOp)
+llvm::FailureOr<ReduceWithIndexParams> getReduceWithIndexParams(triton::ReduceOp op)
 {
-    auto tritonReduceBlock = reduceOp.getBody();
+    auto tritonReduceBlock = op.getBody();
     auto *tritonYield = tritonReduceBlock->getTerminator();
-    auto yieldVelues = tritonYield->getOperands();
+    auto yieldValues = tritonYield->getOperands();
     constexpr int yieldValuesNum = 2;
-    if (yieldVelues.size() != yieldValuesNum) {
-      return {};
+    if (yieldValues.empty()) {
+      return llvm::failure();
+    }
+    if (yieldValues.size() != yieldValuesNum) {
+      return ReduceWithIndexParams{};
     }
 
     // Unify signed/unsigned and int/float predicate
@@ -991,15 +994,16 @@ std::optional<ReduceWithIndexParams> getReduceWithIndexParams(triton::ReduceOp r
     // check if sequence of predicates matches any sequence for min/max
     // leftmost/rightmost
     if (m.find(preds) == m.end()) {
-        return {};
+        return llvm::failure();
     }
 
     assert(!signednesses.empty());
     const bool isUnsignedSrc =
         signednesses[0] == Signedness::Unsigned ||
         signednesses[signednesses.size() - 1] == Signedness::Unsigned;
-    return ReduceWithIndexParams {
-      .withIndexType = m.at(preds).first, .tieBreakType = m.at(preds).second, .isUnsignedSrc = isUnsignedSrc};
+    return ReduceWithIndexParams{.withIndexType = m.at(preds).first,
+                                 .tieBreakType = m.at(preds).second,
+                                 .isUnsignedSrc = isUnsignedSrc};
 }
 
 // Fold layout constant info to attr, otherwise convert to index type value
@@ -1202,7 +1206,7 @@ Value materializeValue(OpBuilder &builder, Location loc, OpFoldResult ofr) {
   if (auto val = ofr.dyn_cast<Value>()) {
     return val;
   }
-  
+
   auto intVal = getIntAttr(ofr);
   if (intVal.has_value()) {
     return builder.create<arith::ConstantOp>(loc, builder.getI32IntegerAttr(intVal.value()));
@@ -1217,6 +1221,11 @@ Value materializeValue(OpBuilder &builder, Location loc, OpFoldResult ofr) {
 bool isZero(const OpFoldResult ofr) {
     auto staticOfr = getIntAttr(ofr);
     return staticOfr.has_value() && staticOfr.value() == 0;
+}
+
+bool isOne(const OpFoldResult ofr) {
+    auto staticOfr = getIntAttr(ofr);
+    return staticOfr.has_value() && staticOfr.value() == 1;
 }
 
 Value convertToIndexIfNeeded(Value input, const Location &loc, OpBuilder &b) {

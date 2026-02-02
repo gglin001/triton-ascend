@@ -162,7 +162,6 @@ bool isMultiple(const OpFoldResult& dividend, const OpFoldResult& divisor);
 bool isEqual(const OpFoldResult& ofr1, const OpFoldResult& ofr2);
 bool isLess(const OpFoldResult& ofs1, const OpFoldResult& ofs2);
 bool isGreater(const OpFoldResult& ofs1, const OpFoldResult& ofs2);
-bool isOne(const OpFoldResult ofr);
 std::optional<int32_t> extractDivisibilityFromOpFoldResult(mlir::OpFoldResult ofr);
 
 }  // namespace TritonToStructured

@@ -36,6 +36,7 @@
 #define DEBUG_TYPE "triton-to-linalg"
 
 #include "llvm/Support/Debug.h"
+#include "llvm/Support/LogicalResult.h"
 
 #include <limits>
 
@@ -261,7 +262,8 @@ public:
     auto reduceWithIndexParams = getReduceWithIndexParams(op);
     auto valuesAccBaseVal = rewriter.create<arith::ConstantOp>(loc, valueType, valueAttr);
     int indicesInitValue =
-        (reduceWithIndexParams.has_value() && (*reduceWithIndexParams).tieBreakType == TieBreakType::RIGHT)
+        (llvm::succeeded(reduceWithIndexParams) &&
+         reduceWithIndexParams->tieBreakType == TieBreakType::RIGHT)
         ? -1
         : std::numeric_limits<int32_t>::max();
 
@@ -304,7 +306,8 @@ public:
     // before we rewrite the argmax reduce op, we know it has return value
     // so addReduceWithIndexAttrIfNeeded won't fail
     // but ignoring it will lead to compiling failure
-    if (reduceWithIndexParams.has_value()) {
+    if (llvm::succeeded(reduceWithIndexParams) &&
+        reduceWithIndexParams->tieBreakType != TieBreakType::None) {
         addReduceWithIndexAttr(*reduceWithIndexParams, rewriter, linalgOp);
     }
 

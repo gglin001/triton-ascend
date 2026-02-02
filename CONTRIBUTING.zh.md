@@ -73,7 +73,7 @@ git remote add upstream https://gitcode.com/Ascend/triton-ascend.git
 
 3、本地环境开发代码
 
-在开发您的代码之前，您需要根据[Triton Ascend安装指南](https://gitcode.com/Ascend/triton-ascend/blob/master/docs/sources/getting-started/installation.md)搭建开发环境。
+在开发您的代码之前，您需要根据[Triton Ascend安装指南](https://gitcode.com/Ascend/triton-ascend/blob/main/docs/zh/installation_guide.md)搭建开发环境。
 
 为避免多个分支间的不一致问题，请创建新的本地开发分支进行新特性的开发：
 

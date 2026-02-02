@@ -497,17 +497,17 @@ def linalg_to_bin_enable_npu_compile_910_95(linalg: str, metadata, opt):
         enable_mixed_cv = metadata["enable_mixed_cv"]
         if enable_mixed_cv is not None:
             _compile_option_list += \
-                [f"--enable_mixed_cv={enable_mixed_cv}"]
+                [f"--enable-mixed-cv={enable_mixed_cv}"]
 
         enable_cce_vf_auto_sync = metadata["enable_cce_vf_auto_sync"]
         if enable_cce_vf_auto_sync is not None:
             _compile_option_list += \
-                [f"--apend-bisheng-options=-mllvm --cce-vf-auto-sync={enable_cce_vf_auto_sync}"]
+                [f"--append-bisheng-options=-mllvm --cce-vf-auto-sync={enable_cce_vf_auto_sync}"]
 
         enable_cce_vf_remove_membar = metadata["enable_cce_vf_remove_membar"]
         if enable_cce_vf_remove_membar is not None:
             _compile_option_list += \
-                [f"--apend-bisheng-options=-mllvm --cce-vf-remove-membar={enable_cce_vf_remove_membar}"]
+                [f"--append-bisheng-options=-mllvm --cce-vf-remove-membar={enable_cce_vf_remove_membar}"]
 
         enable_drop_unit_dims = metadata["enable_drop_unit_dims"]
         if enable_drop_unit_dims is not None:
@@ -778,7 +778,7 @@ class NPUOptions:
     force_simt_only: bool = False
     force_simt_template: bool = False
     # only take effect on the simt-only & simd-simt-mix scenarios
-    shared_mem_dynamic_size: int = 221184
+    shared_mem_dynamic_size: int = None
     # enable_bishengir_simt_optimization is passed as
     # -enable-bishengir-simt-optimization flag to bishengir-compile.
     enable_bishengir_simt_optimization: int = 000
@@ -798,7 +798,12 @@ class NPUOptions:
         elif self.compile_mode == "simt_only":
             object.__setattr__(self, "force_simt_only", True)
             object.__setattr__(self, "parallel_mode", "simt")
-            object.__setattr__(self, "shared_mem_dynamic_size", 122880)
+
+        if self.force_simt_only:
+            if self.shared_mem_dynamic_size is None:
+                object.__setattr__(self, "shared_mem_dynamic_size", 122880)
+        else:
+            object.__setattr__(self, "shared_mem_dynamic_size", 221184)
 
     def hash(self):
         key = "_".join([f"{name}-{val}" for name, val in self.__dict__.items()])
@@ -868,7 +873,7 @@ def ttir_to_npubin(mod, metadata, opt):
                 _compile_option_list += [f"--enable-bishengir-simt-optimization={opt.enable_bishengir_simt_optimization}"]
             if opt.simt_stack_limit:
                 _compile_option_list += [f"--simt-stack-limit={opt.simt_stack_limit}"]
-            if opt.shared_mem_dynamic_size:
+            if opt.shared_mem_dynamic_size is not None:
                 _compile_option_list += [f"--shared-mem-dynamic-size={opt.shared_mem_dynamic_size}"]
 
         npu_compiler_path, env = _get_npucompiler_path()

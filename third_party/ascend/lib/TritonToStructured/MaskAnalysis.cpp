@@ -123,7 +123,7 @@ void MaskState::dump() const {
 
 LogicalResult MaskState::parse(Value operand, const Location loc,
                                OpBuilder &builder) {
-    if (isa<IntegerType>(operand.getType())) {
+    if (isa<IntegerType>(operand.getType()) && operand.getType().getIntOrFloatBitWidth() != 1) {
         return this->parseIntScalar(operand, loc, builder);
     } else if (auto op = operand.getDefiningOp<arith::ConstantOp>()) {
         return this->parseConstant(op, loc, builder);
@@ -167,6 +167,16 @@ LogicalResult MaskState::parseConstant(arith::ConstantOp constOp,
         });
         return failure();
     }
+
+    if (auto intType = dyn_cast<IntegerType>(constOp.getType())) {
+      if (intType.getWidth() == 1) {
+        LLVM_DEBUG({
+          constOp.emitWarning("MaskAnalysis: Unsupported constant for int1");
+        });
+        return failure();
+      }
+    }
+
     if (isa<DenseElementsAttr>(constOp.getValue())) {
         auto attr = cast<DenseElementsAttr>(constOp.getValue());
         auto elementType = attr.getElementType();
@@ -271,13 +281,25 @@ LogicalResult MaskState::parseSplat(triton::SplatOp splatOp, const Location loc,
     if (failed(this->parse(src, loc, builder)))
         return failure();
 
+    if (stateInfo.size() > 1 || (stateInfo.size() == 1 && !isOne(stateInfo.back().shape))) {
+        LLVM_DEBUG({
+            splatOp.emitError()
+                << "splat from a non-scalar source is not supported, unless it's state size and shape are 1";
+        });
+        return failure();
+    }
+
     auto zeroAttr = builder.getIndexAttr(0);
+    SmallVector<dimInfo> newStateInfo;
     for (auto [i, shape] : llvm::enumerate(dstShape)) {
         auto shapeAttr = builder.getIndexAttr(shape);
-        stateInfo.emplace_back(zeroAttr,
-                               shapeAttr, i, true);
+        newStateInfo.emplace_back(zeroAttr, shapeAttr, i, true);
+        if (!stateInfo.empty() && shape == 1) {
+            newStateInfo.back() = stateInfo.back();
+            newStateInfo.back().dimIndex = i;
+        }
     }
-  
+    this->stateInfo = newStateInfo;
     return success();
 }
 
@@ -464,6 +486,15 @@ LogicalResult MaskState::parseCmp(arith::CmpIOp cmpOp, const Location loc,
         llvm::dbgs() << "Parsing CMP operation: " << cmpOp << "\n";
     });
 
+    if (isa<IntegerType>(cmpOp.getLhs().getType()) &&
+        (cmpOp.getLhs().getDefiningOp<arith::CmpIOp>() ||
+         cmpOp.getRhs().getDefiningOp<arith::CmpIOp>())) {
+        LLVM_DEBUG({
+            cmpOp.emitWarning("MaskAnalysis: Unsupported nested cmpi scenario for int1");
+        });
+        return failure();
+    }
+
     MaskState lhsState;
     if (failed(lhsState.parse(cmpOp.getLhs(), loc, builder)))
         return failure();
@@ -472,15 +503,20 @@ LogicalResult MaskState::parseCmp(arith::CmpIOp cmpOp, const Location loc,
     if (failed(rhsState.parse(cmpOp.getRhs(), loc, builder)))
         return failure();
 
-    if (isa<IntegerType>(cmpOp.getLhs().getType())) {
-        LLVM_DEBUG({
-            cmpOp.emitRemark("MaskAnalysis: Unsupported cmpi scenario");
-        });
-        return failure();
+    if (lhsState.scalar) {
+        if (lhsState.stateInfo.empty()) {
+            lhsState.stateInfo.emplace_back(
+                builder.getIndexAttr(0), builder.getIndexAttr(1));
+        }
+        for (auto &info : lhsState.stateInfo) {
+            if (isOne(info.shape)) {
+                info.offset = lhsState.scalar;
+            }
+        }
     }
 
     // lhs must be a Value and rhs must be scalar
-    if (lhsState.scalar || !rhsState.scalar) {
+    if (!rhsState.scalar) {
         LLVM_DEBUG({
             cmpOp.emitWarning("MaskAnalysis: Unsupported cmpi scenario");
         });
@@ -702,6 +738,13 @@ LogicalResult MaskState::parseAnd(arith::AndIOp andOp, const Location loc,
         llvm::dbgs() << "----------------------------------------------\n";
         llvm::dbgs() << "Parsing AND operation: " << andOp << "\n";
     });
+
+    if (isa<IntegerType>(andOp.getLhs().getType())) {
+        LLVM_DEBUG({
+            andOp.emitWarning("MaskAnalysis: Unsupported andi scenario for int1");
+        });
+        return failure();
+    }
 
     MaskState lhsState;
     if (failed(lhsState.parse(andOp.getLhs(), loc, builder)))

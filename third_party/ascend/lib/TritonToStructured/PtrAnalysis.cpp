@@ -68,7 +68,7 @@ namespace TritonToStructured {
 using namespace mlir;
 using namespace triton;
 
-bool isMultiple(const OpFoldResult &dividend, 
+bool isMultiple(const OpFoldResult &dividend,
                 const OpFoldResult &divisor) {
     auto staticDividend = getIntAttr(dividend);
     auto staticDivisor = getIntAttr(divisor);
@@ -78,12 +78,7 @@ bool isMultiple(const OpFoldResult &dividend,
     return staticDividend.value() % staticDivisor.value() == 0;
 }
 
-bool isOne(const OpFoldResult ofr) {
-    auto staticOfr = getIntAttr(ofr);
-    return staticOfr.has_value() && staticOfr.value() == 1;
-}
-
-bool isEqual(const OpFoldResult &ofr1, 
+bool isEqual(const OpFoldResult &ofr1,
              const OpFoldResult &ofr2) {
     auto staticOfr1 = getIntAttr(ofr1);
     auto staticOfr2 = getIntAttr(ofr2);
@@ -197,7 +192,7 @@ void PtrState::normalizeState(const Location loc, OpBuilder &builder) {
         while (it != this->stateInfo.end() && isZero(it->stride)) {
             auto newShape = it->shape;
             auto dimIndex = it->dimIndex;
-            for (++it; it != this->stateInfo.end() && isZero(it->stride) 
+            for (++it; it != this->stateInfo.end() && isZero(it->stride)
                    && it->dimIndex == dimIndex; ++it) {
                 newShape = mulOpFoldResult(newShape, it->shape, loc, builder);
             }
@@ -313,7 +308,7 @@ LogicalResult PtrAnalysis::initStateByPointer(Value operand, PtrState &state,
     Value newSource;
     SmallVector<OpFoldResult> newSizes;
     SmallVector<StateInfo> newStateInfo;
-    
+
     if (auto op = operand.getDefiningOp()) {
       if (auto addPtrOp = dyn_cast<triton::AddPtrOp>(op)) {
         return visitOperandAddptr(cast<triton::AddPtrOp>(op), state, loc,
@@ -391,7 +386,7 @@ LogicalResult PtrState::mulState(const PtrState &lhsState,
     auto newOffset = mulOpFoldResult(lhsState.offset, rhsState.offset, loc, builder);
     updatePtrState(newStateInfo, lhs->sizes, lhs->source,
                    newOffset, loc, builder, lhs->shouldLinearize);
-    
+
     LLVM_DEBUG({
         llvm::dbgs() << "After mulState: \n";
         this->dump();
@@ -522,7 +517,7 @@ LogicalResult PtrState::addState(PtrState &lhsState,
 
     updatePtrState(newStateInfo, newSizes, newSource,
         newOffset, loc, builder, newShouldLinearize);
-    
+
     LLVM_DEBUG({
         llvm::dbgs() << "After addState: \n";
         this->dump();
@@ -664,7 +659,7 @@ LogicalResult PtrAnalysis::visitOperandMakeRange(triton::MakeRangeOp rangeOp,
     }
 
     auto shape = cast<ShapedType>(rangeOp.getType()).getShape();
-    
+
     auto start = rangeOp.getStart();
     auto end = rangeOp.getEnd();
     auto stride = (end - start + shape[0] - 1) / shape[0];
@@ -674,7 +669,7 @@ LogicalResult PtrAnalysis::visitOperandMakeRange(triton::MakeRangeOp rangeOp,
         });
         return failure();
     }
-    
+
     auto infoStride = builder.getIndexAttr(stride);
     auto size = builder.getIndexAttr(shape[0]);
     auto offset = builder.getIndexAttr(start);
@@ -887,7 +882,7 @@ LogicalResult PtrAnalysis::visitOperandConstSplat(arith::ConstantOp op,
     SmallVector<OpFoldResult> sizes;
     SmallVector<StateInfo> stateInfo;
     auto defaultAttr = builder.getIndexAttr(0);
-    
+
     for (auto [i, shape] : llvm::enumerate(resultShape)) {
         auto shapeAttr = builder.getIndexAttr(shape);
         sizes.emplace_back(shapeAttr);
@@ -1006,7 +1001,7 @@ LogicalResult PtrAnalysis::visitOperandRem(arith::RemSIOp remOp,
 
             if (staticNonContiguousSize.value() > 1)
                 newStateInfo.emplace_back(zeroAttr, nonContiguousSize, info.dimIndex);
-            
+
             newStateInfo.emplace_back(info.stride, contiguousSize, info.dimIndex);
         } else {
             LLVM_DEBUG({
@@ -1126,10 +1121,10 @@ LogicalResult PtrAnalysis::visitOperandDiv(arith::DivSIOp divOp,
                 });
                 return failure();
             }
-            
+
             if (staticContiguousSize.value() != 0)
                 newStateInfo.emplace_back(oneAttr, contiguousSize, info.dimIndex);
-            
+
             newStateInfo.emplace_back(zeroAttr, nonContiguousSize, info.dimIndex);
         } else {
             LLVM_DEBUG({
@@ -1274,7 +1269,7 @@ void PtrState::analyzePermute() {
     //     permute: [1, 0] (out[0] = in[1], out[1] = in[0])
 
     std::stable_sort(
-        permuteIds.begin(), 
+        permuteIds.begin(),
         permuteIds.end(),
         [&](const size_t &a, const size_t &b) {
             return isGreater(stateInfo[a].stride, stateInfo[b].stride);
