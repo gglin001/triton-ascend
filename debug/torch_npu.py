@@ -1,3 +1,5 @@
+import torch
+
 import numpy as np
 import torch
 import torch.cpu
@@ -75,3 +77,5 @@ torch.cpu.set_device(DEVICE)
 SEED = 42
 torch.manual_seed(SEED)
 np.random.seed(SEED)
+
+torch.Tensor.npu = torch.Tensor.cpu

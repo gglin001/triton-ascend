@@ -3,8 +3,7 @@ import torch
 import triton
 import triton.language as tl
 
-import npu_device_cpu  # noqa
-# import torch_npu  # noqa
+import torch_npu  # noqa
 
 DEVICE = triton.runtime.driver.active.get_active_torch_device()
 
