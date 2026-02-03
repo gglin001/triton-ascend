@@ -125,6 +125,8 @@ class TestUtils:
     batch = [1, 2, 3, 4, 5, 8]
     test_shape1d = get_shape1d(in_shape1d)
     test_shape2d = get_shape2d(in_shape1d, custom_shape)
+    # custom
+    batch = [1, 8]
     test_shape1d = [(1,), (2,), (8,), (64,), (256,)]
     test_shape2d = [(1, 32), (8, 64)]
     test_shape3d = [(1,22,39), (27,1,39), (27,22,1), (1,1,23), (23,1,1), (1,23,1),
@@ -142,6 +144,9 @@ class TestUtils:
     test_shape1_2_3d = full_shape
     full_dtype = ['int8', 'int16', 'int32', 'int64', 'float16', 'bfloat16', 'float32', 'bool']
     ub_size = 98304 * 2
+    # custom
+    # full_dtype = ['int32', 'float32']
+    full_dtype = ['float32']
     dtype_list = full_dtype
 
 def get_dtype_size(dtype):
