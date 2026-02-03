@@ -22,7 +22,7 @@ import pytest
 import torch
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session", autouse=False)
 def assign_npu(worker_id):
     npu_count = torch.npu.device_count()
     if worker_id == "master":
@@ -31,4 +31,10 @@ def assign_npu(worker_id):
         idx = int(worker_id.replace("gw", ""))
         npu_id = idx % npu_count
     torch.npu.set_device(npu_id)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def assign_npu():
+    import torch.cpu
+    torch.cpu.set_device(0)
 
