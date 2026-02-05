@@ -126,17 +126,17 @@ class TestUtils:
     test_shape1d = get_shape1d(in_shape1d)
     test_shape2d = get_shape2d(in_shape1d, custom_shape)
     # custom
-    batch = [1, 8]
-    test_shape1d = [(1,), (2,), (8,), (64,), (256,)]
-    test_shape2d = [(1, 16), (8, 64)]
+    # batch = [1, 8]
+    # test_shape1d = [(1,), (2,), (8,), (64,), (256,)]
+    # test_shape2d = [(1, 16), (8, 32)]
     test_shape3d = [(1,22,39), (27,1,39), (27,22,1), (1,1,23), (23,1,1), (1,23,1),
                     (37,5,3), (2,29,4), (7,31,7), (3,5,8), (7,17,15), (25,5,16),
                     (23,5,31), (7,11,32), (7,11,33), (2,3,255), (3,3,256), (3,2,257),]
-    test_shape3d = [(4,8,256)]
-    test_shape4d = [(8, 4, 8, 8)]
-    # test_shape4d = [(8, 4, 8, 8), (1, 11, 16, 2)]
-    # test_shape5d = [(2, 3, 4, 5, 6), (1, 3, 4, 5, 6), (3, 6, 2, 4, 4)]
-    test_shape5d = [(2, 8, 4, 8, 8)]
+    # test_shape3d = [(4,8,256)]
+    # test_shape4d = [(8, 4, 8, 8)]
+    test_shape4d = [(8, 4, 8, 8), (1, 11, 16, 2)]
+    test_shape5d = [(2, 3, 4, 5, 6), (1, 3, 4, 5, 6), (3, 6, 2, 4, 4)]
+    # test_shape5d = [(2, 8, 4, 8, 8)]
     test_shape6d = [(2, 3, 5, 6, 3, 2)]
     test_shape7d = [(1, 2, 3, 4, 3, 2, 2)]
     test_shape_ub_overflow = [(10, 50, 1000)]
@@ -149,7 +149,7 @@ class TestUtils:
     ub_size = 98304 * 2
     # custom
     # full_dtype = ['int32', 'float32']
-    full_dtype = ['float32']
+    # full_dtype = ['float32']
     dtype_list = full_dtype
 
 def get_dtype_size(dtype):
