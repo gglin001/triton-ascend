@@ -49,12 +49,66 @@ pip install triton-ascend
 - 注意1：如果您选择自行下载nightly包安装，请在选择Triton-Ascend包时选择对应您服务器的python版本以及架构(aarch64/x86_64)。
 - 注意2：nightly是每日构建的包，开发者提交mr频繁，没有经过稳定的测试，可能存在功能上的bug，请知悉。
 
+## 快速使用Docker 安装环境
+我们提供了Dockerfile帮助您安装Docker环境镜像。安装过程将会自动从CANN官网中下载安装对应的CANN Toolkit和Kernel包，需要您通过`--build-arg`指定您机器需要安装的CANN相关参数。
+
+| 参数名称 | 默认值 | 可选值                                   |
+| -------- | ------ |---------------------------------------|
+| CHIP_TYPE | A3     | A3、910b                               |
+| CANN_VERSION | 8.5.0（推荐） | 8.5.0、8.3.RC1、8.3.RC2、8.2.RC1、8.2.RC2 |
+
+您可以通过 npu-smi 命令查看系统上的NPU型号。
+
+不同`CHIP_TYPE`选项对应的机器可参考：
+
+| 选项序号 | **CHIP_TYPE 参数值** | 对应机器/产品系列 |                 典型整机                 |   别称    |
+| :---: |:-----------------:| :---: |:-----------------------------------:|:-------:|
+| 1 |       `A3`        | Atlas A3 训练系列产品 |        Atlas 900 A3 SuperPoD        |  910C   |
+| 2 |      `910b`       | Atlas A2 训练系列产品 |            Atlas800T A2             |   A2    |
+```bash
+git clone https://gitcode.com/Ascend/triton-ascend.git && cd triton-ascend
+docker build \
+--build-arg CHIP_TYPE=A3 \
+--build-arg CANN_VERSION=8.5.0 \
+-t triton-ascend-image:latest -f ./docker/Dockerfile .
+```
+根据该镜像启动容器，可以参考下面的命令：
+```bash
+docker run -u 0 -dit --shm-size=512g --name=triton-ascend_container --net=host --privileged \
+--security-opt seccomp=unconfined \
+--device=/dev/davinci0 \
+--device=/dev/davinci1 \
+--device=/dev/davinci2 \
+--device=/dev/davinci3 \
+--device=/dev/davinci4 \
+--device=/dev/davinci5 \
+--device=/dev/davinci6 \
+--device=/dev/davinci7 \
+--device=/dev/davinci_manager \
+--device=/dev/devmm_svm \
+--device=/dev/hisi_hdc \
+-v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi \
+-v /usr/local/sbin/npu-smi:/usr/local/sbin/npu-smi \
+-v /usr/local/Ascend:/usr/local/Ascend \
+-v /usr/local/Ascend/driver:/usr/local/Ascend/driver \
+-v /home:/home \
+triton-ascend-image:latest \
+/bin/bash
+```
+
 ## 运行Triton示例
 
-运行实例: [01-vector-add.py](../../ascend/examples/tutorials/01-vector-add.py)
+运行实例: [01-vector-add.py](../../third_party/ascend/tutorials/01-vector-add.py)
 ```bash
 # 设置CANN环境变量（以root用户默认安装路径`/usr/local/Ascend`为例）
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 # 运行tutorials示例：
-python3 ./triton-ascend/ascend/examples/tutorials/01-vector-add.py
+python3 ./triton-ascend/third_party/ascend/tutorials/01-vector-add.py
+```
+
+观察到类似的输出即说明环境配置正确。
+```
+tensor([0.8329, 1.0024, 1.3639,  ..., 1.0796, 1.0406, 1.5811], device='npu:0')
+tensor([0.8329, 1.0024, 1.3639,  ..., 1.0796, 1.0406, 1.5811], device='npu:0')
+The maximum difference between torch and triton is 0.0
 ```

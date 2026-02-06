@@ -335,6 +335,28 @@ LoadConverter::matchAndRewrite(triton::LoadOp op, OpAdaptor adaptor,
         boundaryCheck, /*remapped*/ ptr, loc, rewriter);
     // handle the padding
     auto padding = op.getPadding();
+    SmallVector<OpFoldResult> srcOffsets(boundarySizes.size(), rewriter.getIndexAttr(0));
+    SmallVector<OpFoldResult> dstOffsets;
+    if (auto makeTensorPtrOp = op.getPtr().getDefiningOp<triton::MakeTensorPtrOp>()) {
+      auto zeroVal = rewriter.createOrFold<arith::ConstantOp>(loc, rewriter.getI32IntegerAttr(0));
+      for (auto [idx, offVal] : llvm::enumerate(makeTensorPtrOp.getOffsets())) {
+        Value offset = rewriter.createOrFold<arith::SubIOp>(loc, zeroVal, offVal);
+        Value size = getValueOrCreateConstantIndexOp(rewriter, loc, boundarySizes[idx]);
+        offset = rewriter.createOrFold<arith::MaxSIOp>(loc, offset, zeroVal);
+        offset = rewriter.createOrFold<arith::IndexCastOp>(loc, rewriter.getIndexType(), offset);
+        OpFoldResult ofr;
+        if (auto constOp = offset.getDefiningOp<arith::ConstantOp>()) {
+          ofr = constOp.getValue();
+        } else {
+          ofr = offset;
+        }
+        ofr = minOpFoldResult(ofr, size, loc, rewriter);
+        boundarySizes[idx] = subOpFoldResult(size, ofr, loc, rewriter);
+        dstOffsets.push_back(ofr);
+      }
+    } else {
+      dstOffsets = srcOffsets;
+    }
     if (padding.has_value()) {
       TypedAttr padAttr = rewriter.getZeroAttr(memRefElementType);
       // triton already ensure only NAN and ZERO are passed in
@@ -350,11 +372,10 @@ LoadConverter::matchAndRewrite(triton::LoadOp op, OpAdaptor adaptor,
       fillTensorWithOtherForMaskScenario(padVal, allocOp, boundarySizes,
                                          rewriter);
     }
-
     auto srcSubView =
-        mlir::ConverterUtils::makeSubViewOp(ptr, boundarySizes, loc, rewriter);
+        mlir::ConverterUtils::makeSubViewOp(ptr, srcOffsets, boundarySizes, loc, rewriter);
     auto dstSubview = mlir::ConverterUtils::makeSubViewOp(
-        allocOp, boundarySizes, loc, rewriter);
+        allocOp, dstOffsets, boundarySizes, loc, rewriter);
     rewriter.create<memref::CopyOp>(loc, srcSubView, dstSubview);
     if (mayImplicitTransposeWithLastAxis) {
       auto markOp = rewriter.create<annotation::MarkOp>(loc, dstSubview);
@@ -1188,16 +1209,39 @@ StoreConverter::matchAndRewrite(triton::StoreOp op, OpAdaptor adaptor,
   // 1. boundary size check
   auto boundaryCheck = op.getBoundaryCheck();
   if (!boundaryCheck.empty()) {
-      auto boundarySizes = mlir::ConverterUtils::getBoundarySizes(
+    auto boundarySizes = mlir::ConverterUtils::getBoundarySizes(
         boundaryCheck, /*remapped*/ ptr, loc, rewriter);
-      auto srcSlice = mlir::ConverterUtils::makeExtractSliceOp(val, boundarySizes, loc, rewriter);
-      auto dstSubview = mlir::ConverterUtils::makeSubViewOp(ptr, boundarySizes, loc, rewriter);
-      auto storeOp =
-      rewriter.create<bufferization::MaterializeInDestinationOp>(
-          loc, srcSlice, dstSubview);
-      storeOp.setWritable(true);
-      rewriter.eraseOp(op);
-      return success();
+    SmallVector<OpFoldResult> srcOffsets;
+    SmallVector<OpFoldResult> dstOffsets(boundarySizes.size(), rewriter.getIndexAttr(0));
+    if (auto makeTensorPtrOp = op.getPtr().getDefiningOp<triton::MakeTensorPtrOp>()) {
+      auto zeroVal = rewriter.createOrFold<arith::ConstantOp>(loc, rewriter.getI32IntegerAttr(0));
+      for (auto [idx, offVal] : llvm::enumerate(makeTensorPtrOp.getOffsets())) {
+        Value offset = rewriter.createOrFold<arith::SubIOp>(loc, zeroVal, offVal);
+        Value size = getValueOrCreateConstantIndexOp(rewriter, loc, boundarySizes[idx]);
+        offset = rewriter.createOrFold<arith::MaxSIOp>(loc, offset, zeroVal);
+        offset = rewriter.createOrFold<arith::IndexCastOp>(loc, rewriter.getIndexType(), offset);
+        OpFoldResult ofr;
+        if (auto constOp = offset.getDefiningOp<arith::ConstantOp>()) {
+          ofr = constOp.getValue();
+        } else {
+          ofr = offset;
+        }
+        ofr = minOpFoldResult(ofr, size, loc, rewriter);
+        boundarySizes[idx] = subOpFoldResult(size, ofr, loc, rewriter);
+        srcOffsets.push_back(ofr);
+      }
+    } else {
+      srcOffsets = dstOffsets;
+    }
+    auto srcSlice = mlir::ConverterUtils::makeExtractSliceOp(
+        val, srcOffsets, boundarySizes, loc, rewriter);
+    auto dstSubview = mlir::ConverterUtils::makeSubViewOp(
+        ptr, dstOffsets, boundarySizes, loc, rewriter);
+    auto storeOp = rewriter.create<bufferization::MaterializeInDestinationOp>(
+        loc, srcSlice, dstSubview);
+    storeOp.setWritable(true);
+    rewriter.eraseOp(op);
+    return success();
   }
 
   // 2. Simple load with no mask

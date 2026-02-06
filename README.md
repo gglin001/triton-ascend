@@ -1,117 +1,117 @@
 # Triton-Ascend
 
-## 项目简介与价值主张
-Triton-Ascend是面向昇腾平台构建的Triton编译框架，旨在让Triton代码能够在昇腾硬件上高效运行。
-- #### 核心价值说明
-Triton是近几年来受到开发者青睐的Python化编译框架。开发者仅需关注Tile/Block的切分方式以及基于Tile/Block的运算逻辑，编译器将在Triton代码的编译过程中结合底层硬件特点自动完成内存分配、数据搬运、数据计算、流水并行等，因此，算子的开发难度大幅降低、开发效率显著提升。  
-Triton-Ascend将Triton编译栈适配到华为昇腾NPU上，在Triton的基础上提供一系列针对性的优化，使Triton代码能够编译后在昇腾硬件上高效运行。  
-目前，Triton-Ascend仍在持续完善中，我们将不断提升Triton Python API完备度、数据类型支持度、访存方式灵活性等，并持续优化编译器的自动优化能力，提升Triton-Ascend整体的功能与性能泛化性。
-- #### 昇腾生态定位
-Triton-Ascend编译框架打通了Triton与昇腾硬件之间的壁垒，使熟悉Triton框架的开发者可以更有效率地使用昇腾NPU。它通过提供通用、高效的算子开发范式，为昇腾软件栈补齐了敏捷开发的关键一环，极大丰富了昇腾的算子库和上层应用生态。
+## Project Overview and Value Proposition
+Triton-Ascend is a Triton compilation framework built for the Ascend platform, aiming to enable Triton code to run efficiently on Ascend hardware.
+- #### Core Value
+Triton is a Python-based compilation framework that has been favored by developers in recent years. Developers only need to focus on the tile/block slicing mode and the computation logic based on tiles/blocks. During the compilation of Triton code, the compiler automatically completes memory allocation, data transfer, data computation, and pipeline parallelism based on the characteristics of underlying hardware. This greatly reduces the operator development difficulty and significantly improves the development efficiency. 
+Triton-Ascend adapts the Triton compilation stack to Huawei Ascend NPUs and provides a series of optimizations based on Triton, so that Triton code can run efficiently on Ascend hardware after compilation. 
+Currently, Triton-Ascend is still being improved. We will continuously improve the completeness of Triton Python APIs, support more data types, make memory access more flexible, and continuously optimize the automatic optimization capability of the compiler to improve the overall functionality and performance generalization of Triton-Ascend.
+- #### Ascend Ecosystem Positioning
+The Triton-Ascend compilation framework removes the barriers between Triton and Ascend hardware, enabling developers who are familiar with the Triton framework to use Ascend NPUs more efficiently. It provides a universal and efficient operator development paradigm, which is a key part of agile development for the Ascend software stack. This greatly enriches the Ascend operator library and upper-layer application ecosystem.
 
-## 最新动态与里程碑
-- #### 近期版本更新
-当前版本：[Triton-Ascend 3.2.0](https://pypi.org/project/triton-ascend/)  
-配套CANN版本：[昇腾CANN社区版8.5.0](https://www.hiascend.com/developer/download/community/result?module=cann&cann=8.5.0)  
-2026年版本计划：升级triton版本到triton3.4
-- #### 里程碑
-| 里程碑 | 重要特性更新情况 | 状态 |
+## Latest Updates and Milestones
+- #### Latest Updates
+Current version: [Triton-Ascend 3.2.0](https://pypi.org/project/triton-ascend/) 
+CANN version: [Ascend CANN Community Edition 8.5.0](https://www.hiascend.com/developer/download/community/result?module=cann&cann=8.5.0) 
+Version plan for 2026: Upgrade to Triton 3.4.
+- #### Milestones
+| Milestone| Important Update| Status|
 |------|------|------|
-| 2025.11.14 | Triton-Ascend 3.2.0rc4预发布版本上线：<br>[扩展 tt.fp_to_fp 接口，新增对 FP8的类型转换支持](https://gitcode.com/Ascend/triton-ascend/pull/891) <br>[新增 scatter_ub_to_out 接口，支持从UB到GM的高效数据分散操作](https://gitcode.com/Ascend/triton-ascend/pull/864)| ✅ |
-| 2025.09.30 | 完善Scan/Sort类Triton Python API，支持非连续访存，完成vLLM、sglang开源仓中重点Triton算子适配 | ✅ |
-| 2025.09.19 | 支持Triton-Ascend [nightly包](https://test.pypi.org/project/triton-ascend/#history)提取  | ✅ |
-| 2025.08.15 | 完善Atomic类Triton Python API支持，完成Flaggems开源仓重点Triton算子适配，提供Matmul等简单算子高性能实现参考用例 | ✅ |
-| 2025.06.30 | 支持85% Triton Python API，支持连续访存，覆盖基本使用场景需求 | ✅ |
-| 2025.05.20 | Triton-Ascend开源，Gitcode代码仓Alive！ | ✅ |
-- #### 社区活动信息
-1. [会议日历](https://meeting.osinfra.cn/ascend)
-2. [会议纪要看板]( https://etherpad-ascend.meeting.osinfra.cn/p/sig-AscendNPU-IR)
+| 2025.11.14 | The pre-release version Triton-Ascend 3.2.0rc4 is available.<br>[Extended the tt.fp_to_fp API to support conversion to the FP8 type.](https://gitcode.com/Ascend/triton-ascend/pull/891)<br>[Added the scatter_ub_to_out API to support efficient data scattering from the UB to the GM.](https://gitcode.com/Ascend/triton-ascend/pull/864)| ✅ |
+| 2025.09.30 | Improved the Triton Python APIs of the Scan/Sort class, supported non-contiguous memory access, and completed the adaptation of key Triton operators in the vLLM and sglang open-source repositories.| ✅ |
+| 2025.09.19 | Supported the extraction of the Triton-Ascend [nightly package](https://test.pypi.org/project/triton-ascend/#history). | ✅ |
+| 2025.08.15 | Improved the support for the Triton Python APIs of the Atomic class, completed the adaptation of key Triton operators in the Flaggems open-source repository, and provided reference cases for high-performance implementation of simple operators such as Matmul.| ✅ |
+| 2025.06.30 | Supported 85% of Triton Python APIs and contiguous memory access, covering basic application scenarios.| ✅ |
+| 2025.05.20 | Triton-Ascend is open-source, and the GitCode code repository is alive!| ✅ |
+- #### Community Activities
+1. [Meeting calendar](https://meeting.osinfra.cn/ascend)
+2. [Meeting minutes dashboard](https://etherpad-ascend.meeting.osinfra.cn/p/sig-AscendNPU-IR)
 
-## 性能基准测试
-### 关键算子性能图表
-选取经过性能优化后的关键算子FA、MM、Softmax作为示例。通过图表展示Triton算子与AscendC算子的性能差异，指标为加速比(`Speedup= AscendC_Duration_Time / Triton_Duration_Time`), [调优指南参考方法](./docs/zh/debug_guide/profiling.md)：
+## Performance Benchmarking
+### Performance Charts of Key Operators
+The key operators FA, MM, and Softmax that have been optimized are selected as examples. The following charts show the performance differences between Triton operators and AscendC operators. The metric is the speedup ratio (`Speedup = AscendC_Duration_Time/Triton_Duration_Time`). For details, see the [Optimization Guide](./docs/en/debug_guide/profiling.md).
 
-- FA 性能图表：
+- FA performance chart:
 
-![FA 性能图表](docs/zh/figures/FA_Performance.png)
+![FA performance chart](docs/en/figures/FA_Performance.png)
 
-- MM 性能图表：
+- MM performance chart:
 
-![MM 性能图表](docs/zh/figures/MM_Performance.png)
+![MM performance chart](docs/en/figures/MM_Performance.png)
 
-- Softmax 性能图表：
+- Softmax performance chart:
 
-![Softmax 性能图表](docs/zh/figures/Softmax_Performance.png)
+![Softmax performance chart](docs/en/figures/Softmax_Performance.png)
 
-## 支持范围
+## Support
 
 
-- #### 硬件支持
-Triton-Ascend 在昇腾 AI 产品支持使用，具体型号如下：
+- #### Hardware Support
+Triton-Ascend is supported by Ascend AI products. The following table lists the product models.
 
-| 产品系列                   | 产品型号                              |
+| Product Series                  | Product Model                             |
 |----------------------------|---------------------------------------|
-| **Atlas A3 训练系列产品**   | Atlas 800T A3 超节点服务器            |
-|                            | Atlas 900 A3 SuperPoD 超节点          |
-|                            | A200T A3 Box8 超节点服务器            |
-| **Atlas A3 推理系列产品**   | Atlas 800I A3 超节点服务器            |
-| **Atlas A2 训练系列产品**   | Atlas 800T A2 训练服务器              |
-|                            | Atlas 900 A2 PoD 集群基础单元         |
-|                            | Atlas 200T A2 Box16 异构子框          |
-| **Atlas A2 推理系列产品**   | Atlas 800I A2 推理服务器              |
-|                            | Atlas 300I A2 推理卡                  |
-|                            | A200I A2 Box 异构组件                 |
+| **Atlas A3 training products**  | Atlas 800T A3 SuperNode server           |
+|                            | Atlas 900 A3 SuperPoD server         |
+|                            | A200T A3 Box8 SuperPoD server           |
+| **Atlas A3 inference products**  | Atlas 800I A3 SuperNode server           |
+| **Atlas A2 training products**  | Atlas 800T A2 training server             |
+|                            | Atlas 900 A2 PoD cluster basic unit        |
+|                            | Atlas 200T A2 Box16 heterogeneous subrack         |
+| **Atlas A2 inference products**  | Atlas 800I A2 inference server             |
+|                            | Atlas 300I A2 inference card                 |
+|                            | A200I A2 Box heterogeneous subrack                |
 
-- #### 兼容性
+- #### Compatibility
 
-**支持操作系统：**
-Triton-Ascend 所支持的操作系统与 CANN 一致。请参考 CANN 官方文档，下载并安装适用于您操作系统的 CANN 版本。
+**Supported OSs:**
+The OSs supported by Triton-Ascend are the same as those supported by CANN. Download and install the CANN version that is compatible with your OS. For details, see the official CANN documentation.
 
-**CANN版本：**
+**CANN versions:**
 
-- 商用版
+- Commercial versions
 
-| Triton-Ascend版本 | CANN商用版本 | CANN发布日期 |
+| Triton-Ascend Version| CANN Commercial Version| Release Date|
 |-------------------|----------------------|--------------------|
 | 3.2.0             | CANN 8.5.0           | 2026/01/16         |
 | 3.2.0rc4          | CANN 8.3.RC2         | 2025/11/20         |
 |                   | CANN 8.3.RC1         | 2025/10/30         |
 
-- 社区版
+- Community versions
 
-| Triton-Ascend版本 | CANN社区版本 | CANN发布日期 |
+| Triton-Ascend Version| CANN Community Version| Release Date|
 |-------------------|----------------------|--------------------|
 | 3.2.0             | CANN 8.5.0           | 2026/01/16         |
 | 3.2.0rc4          | CANN 8.3.RC2         | 2025/11/20         |
 |                   | CANN 8.5.0.alpha001  | 2025/11/12         |
 |                   | CANN 8.3.RC1         | 2025/10/30         |
 
-## 入门指引
+## Getting Started
 
-- [快速开始](./docs/zh/quick_start.md)
+- [Quick Start](./docs/en/quick_start.md)
 
-- [架构设计与核心特性](./docs/zh/architecture_design_and_core_features.md)
+- [Architecture Design and Core Features](./docs/en/architecture_design_and_core_features.md)
 
-- [算子开发指南](./docs/zh/programming_guide.md)
+- [Operator Development Guide](./docs/en/programming_guide.md)
 
-- [算子迁移指南](./docs/zh/migration_guide/migrate_from_gpu.md)
+- [Operator Migration Guide](./docs/en/migration_guide/migrate_from_gpu.md)
 
-- [算子调试指南](./docs/zh/debug_guide/debugging.md#)
+- [Operator Debugging Guide](./docs/en/debug_guide/debugging.md#)
 
-- [性能调优指南](./docs/zh/debug_guide/profiling.md#)
+- [Performance Optimization Guide](./docs/en/debug_guide/profiling.md#)
 
-- [环境变量](docs/zh/environment_variable_reference.md)
+- [Environment Variables](docs/en/environment_variable_reference.md)
 
-## 常见问题
+## FAQ
 
-在使用Triton-Ascend时遇到的常见问题，详见 [FAQ](./docs/zh/FAQ.md#)
+For details about the FAQ encountered when using Triton-Ascend, see [FAQ](./docs/en/FAQ.md#).
 
-## 安全声明
+## Security Note
 
-我们重视开发者在使用Triton-Ascend时的信息安全，安全防护建议与相关信息请见 [安全声明](./SECURITYNOTE.md)
+We attach great importance to the information security of developers using Triton-Ascend. For details about the security protection suggestions and related information, see [Security Note](./SECURITYNOTE.md).
 
-## 许可证信息
-本项目代码与文档均采用 [MIT许可证](./LICENSE)
+## License Information
+The code and documents of this project are released under the [MIT License](./LICENSE).
 
-## 社区与贡献
-欢迎参与Triton-Ascend的开发及代码贡献，详情请参阅 [贡献指南](./CONTRIBUTING.zh.md)
+## Community and Contribution
+You are welcome to participate in the development and code contribution of Triton-Ascend. For details, see [Contribution Guide](./CONTRIBUTING.zh.md).

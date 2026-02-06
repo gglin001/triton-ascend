@@ -53,10 +53,14 @@ def atomic_add_supply(
 
 @pytest.mark.parametrize('param_list',
                          [
+                             ['int64', (256, 32), 2],
+                             ['int32', (32, 32), 2],
                              ['int16', (32, 32), 2],
                              ['int8', (32, 32), 2],
+                             ['uint8', (32, 32), 2],
                              ['float32', (32, 32), 2],
                              ['float16', (64, 64), 4],
+                             ['bfloat16', (64, 64), 4],
                              ['float32', (128, 128), 8],
                              ['float16', (128, 128), 16],
                              ['float32', (32768, 16), 32],
@@ -68,7 +72,10 @@ def test_atomic_add(param_list):
     split_size = shape[0] // ncore
     x0_value = 3
     x0 = torch.full(shape, x0_value, dtype=eval(f'torch.{dtype}')).npu()
-    x1 = torch.full((split_size, shape[1]), 2, dtype=eval(f'torch.{dtype}')).npu()
+    if dtype == 'int64':
+        x1 = torch.randint(-10**15, 10**15, (split_size, shape[1]), dtype=eval(f'torch.{dtype}')).npu()
+    else:
+        x1 = torch.full((split_size, shape[1]), 2, dtype=eval(f'torch.{dtype}')).npu()
     y = torch.full((split_size, shape[1]), -10, dtype=eval(f'torch.{dtype}')).npu()
 
     y_ref = x1 + 0

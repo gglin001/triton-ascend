@@ -60,11 +60,13 @@ Value getScalarValue(Value operand, Location loc,
                      ConversionPatternRewriter &rewriter);
 
 memref::SubViewOp makeSubViewOp(Value src,
+                                const llvm::SmallVector<OpFoldResult> &offsets,
                                 const llvm::SmallVector<OpFoldResult> &sizes,
                                 const Location &loc,
                                 ConversionPatternRewriter &rewriter);
 
 tensor::ExtractSliceOp makeExtractSliceOp(Value src,
+                                          const llvm::SmallVector<OpFoldResult> &offsets,
                                           const llvm::SmallVector<OpFoldResult> &sizes,
                                           const Location &loc,
                                           ConversionPatternRewriter &rewriter);

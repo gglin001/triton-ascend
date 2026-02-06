@@ -459,6 +459,11 @@ def linalg_to_bin_enable_npu_compile_910_95(linalg: str, metadata, opt):
             _compile_option_list += \
                 [f"--enable-hivm-auto-cv-balance={enable_hivm_auto_cv_balance}"]
 
+        sync_solver = metadata["sync_solver"]
+        if sync_solver is not None:
+            _compile_option_list += \
+                [f"--enable-hivm-graph-sync-solver={sync_solver}"]
+
         unit_flag = metadata["unit_flag"]
         if unit_flag is not None:
             _compile_option_list += \

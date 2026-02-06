@@ -1173,6 +1173,8 @@ void BlockDataParser::rewriteMakeTensorPtrOp(
 
   data.getOffsetsRef() =
       std::move(llvm::map_to_vector(op.getOffsets(), [&](Value v) {
+        auto zeroVal = rewriter.create<arith::ConstantOp>(loc, rewriter.getI32IntegerAttr(0));
+        v = rewriter.create<arith::MaxSIOp>(loc, v, zeroVal);
         return getOpFoldResultOfLayoutInfo(v, rewriter);
       }));
   data.getStridesRef() =

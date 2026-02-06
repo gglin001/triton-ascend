@@ -116,10 +116,11 @@ def compile_hint_impl(ptr: tensor, hint_name: str, hint_val, builder: ir.builder
     # FIXME: is_simt_mode
     # if builder.is_simt_mode():
     #     return
-    if not hint_val:
-        hint_val = builder.get_unit_attr()
-    elif isinstance(hint_val, bool):
+    # Check isinstance(hint_val, bool) first to handle False explicitly
+    if isinstance(hint_val, bool):
         hint_val = builder.get_bool_attr(hint_val)
+    elif not hint_val:
+        hint_val = builder.get_unit_attr()
     elif isinstance(hint_val, int):
         hint_val = builder.get_int32_attr(hint_val)
     elif isinstance(hint_val, core.constexpr):

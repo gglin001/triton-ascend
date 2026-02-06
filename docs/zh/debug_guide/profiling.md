@@ -159,4 +159,4 @@ def npu_vector_cmp_kernel(
 **示例图** 优化前后数据对比图
 ![图2 optimization2](../figures/optimization.png)
 通过分析图中的数据可以发现，优化前后的aiv_scalar_time(us)和aiv_scalar_ratio差距较大，说明性能差的原因是有很多scalar运算，
-通过下面两步可以得到visualize_data.bin，再用MindStudio Insight解析visualize_data.bin，可以发现xbar = tl.where(cols < N, x - mean, 0.0)有很多scalar运算，通过上面优化可以减少scalar运算。
+通过采集[算子仿真流水图](#算子仿真流水图)可以得到visualize_data.bin，再用MindStudio Insight解析visualize_data.bin，可以发现xbar = tl.where(cols < N, x - mean, 0.0)有很多scalar运算，通过上面优化可以减少scalar运算。

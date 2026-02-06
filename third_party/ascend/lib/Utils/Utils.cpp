@@ -231,12 +231,11 @@ Value getScalarValue(Value operand, Location loc,
 }
 
 memref::SubViewOp makeSubViewOp(Value src,
+                                const llvm::SmallVector<OpFoldResult> &offsets,
                                 const llvm::SmallVector<OpFoldResult> &sizes,
                                 const Location &loc,
                                 ConversionPatternRewriter &rewriter) {
   auto srcType = cast<MemRefType>(src.getType());
-  SmallVector<OpFoldResult> offsets(srcType.getRank(),
-                                    rewriter.getIndexAttr(0));
   SmallVector<OpFoldResult> strides(srcType.getRank(),
                                     rewriter.getIndexAttr(1));
   auto dstType =
@@ -246,12 +245,11 @@ memref::SubViewOp makeSubViewOp(Value src,
 }
 
 tensor::ExtractSliceOp makeExtractSliceOp(Value src,
+                                          const llvm::SmallVector<OpFoldResult> &offsets,
                                           const llvm::SmallVector<OpFoldResult> &sizes,
                                           const Location &loc,
                                           ConversionPatternRewriter &rewriter) {
   auto srcType = cast<RankedTensorType>(src.getType());
-  SmallVector<OpFoldResult> offsets(srcType.getRank(),
-                                    rewriter.getIndexAttr(0));
   SmallVector<OpFoldResult> strides(srcType.getRank(),
                                     rewriter.getIndexAttr(1));
   auto dstType =
